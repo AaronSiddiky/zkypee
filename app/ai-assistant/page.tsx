@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
 import Auth from "../../components/Auth";
-import Image from "next/image";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 
 export default function AIAssistantPage() {
   const { user, loading } = useAuth();
+  const router = useRouter();
+
   const [prompt, setPrompt] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -18,23 +19,46 @@ export default function AIAssistantPage() {
   >("idle");
   const [callResult, setCallResult] = useState<{
     callId?: string;
-    recording?: string;
-    transcript?: string;
-    summary?: string;
+    recording?: string | null;
+    transcript?: string | null;
+    summary?: string | null;
   } | null>(null);
   const [error, setError] = useState("");
   const [selectedVoice, setSelectedVoice] = useState("Cailee (Female)");
   const [twilioNumber, setTwilioNumber] = useState<string | null>(null);
   const [showVoices, setShowVoices] = useState(false);
 
-  // Show loading state while checking authentication
+  // Auth modal state
+  const [authOpen, setAuthOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !user) setAuthOpen(true);
+  }, [loading, user]);
+
+  // Loading state while checking auth
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#00AFF0]">
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 flex items-center space-x-4">
-          <svg className="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <svg
+            className="animate-spin h-5 w-5 text-blue-500"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
           </svg>
           <span className="text-gray-900 font-medium">Loading...</span>
         </div>
@@ -42,57 +66,67 @@ export default function AIAssistantPage() {
     );
   }
 
-  // If user is not authenticated, show auth component
+  // Gate: if unauthenticated, show CTA + Auth modal
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-[#00AFF0]">
-        <Auth onSuccess={() => window.location.reload()} />
+      <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-[#00AFF0]">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="max-w-md w-full text-center bg-white/20 backdrop-blur-md rounded-2xl p-8 border border-white/30"
+        >
+          <h1 className="text-3xl font-bold text-white mb-3">
+            Sign in to Access AI Assistant
+          </h1>
+          <p className="text-white/80 mb-6">
+            Use your Zkypee account to continue.
+          </p>
+          <button
+            type="button"
+            onClick={() => setAuthOpen(true)}
+            className="inline-flex items-center rounded-full bg-white text-[#00AFF0] px-6 py-3 text-sm font-semibold hover:bg-opacity-90"
+          >
+            Sign in
+          </button>
+        </motion.div>
+
+        <Auth
+          open={authOpen}
+          onClose={() => setAuthOpen(false)}
+          initialMode="signin"
+          onSuccess={() => {
+            setAuthOpen(false);
+            router.refresh();
+          }}
+        />
       </div>
     );
   }
 
-  // Add this function to format phone numbers
+  // Format phone numbers
   const formatPhoneNumber = (number: string): string => {
-    // Remove any non-digit characters
     const digits = number.replace(/\D/g, "");
-
-    // If it's a US number without country code, add +1
-    if (digits.length === 10) {
-      return `+1${digits}`;
-    }
-
-    // If it already has country code but missing +
-    if (digits.length > 10 && !number.startsWith("+")) {
-      return `+${digits}`;
-    }
-
-    // If it already has + but contains non-digits, clean it up
-    if (number.startsWith("+")) {
-      return `+${digits}`;
-    }
-
+    if (digits.length === 10) return `+1${digits}`;
+    if (digits.length > 10 && !number.startsWith("+")) return `+${digits}`;
+    if (number.startsWith("+")) return `+${digits}`;
     return number;
   };
 
-  // Fetch the Twilio phone number
+  // Fetch Twilio number (optional use)
   React.useEffect(() => {
     const fetchTwilioNumber = async () => {
       try {
         const response = await fetch("/api/twilio/phone-number");
         if (response.ok) {
           const data = await response.json();
-          if (data.phoneNumber) {
-            setTwilioNumber(data.phoneNumber);
-          }
+          if (data.phoneNumber) setTwilioNumber(data.phoneNumber);
         }
       } catch (error) {
         console.error("Error fetching Twilio number:", error);
       }
     };
-
-    if (user) {
-      fetchTwilioNumber();
-    }
+    if (user) fetchTwilioNumber();
   }, [user]);
 
   const handleAICall = async (
@@ -103,20 +137,10 @@ export default function AIAssistantPage() {
     try {
       const response = await fetch("/api/bland-ai", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt,
-          phoneNumber,
-          voice,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt, phoneNumber, voice }),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to schedule AI call");
-      }
-
+      if (!response.ok) throw new Error("Failed to schedule AI call");
       const data = await response.json();
       return data;
     } catch (error) {
@@ -130,14 +154,13 @@ export default function AIAssistantPage() {
 
     if (!user) {
       setError("Please sign in to use the AI Voice Assistant");
+      setAuthOpen(true);
       return;
     }
-
     if (!prompt.trim()) {
       setError("Please enter instructions for the AI assistant");
       return;
     }
-
     if (!phoneNumber.trim()) {
       setError("Please enter a phone number to call");
       return;
@@ -148,10 +171,8 @@ export default function AIAssistantPage() {
     setCallStatus("scheduled");
 
     try {
-      // Format the phone number
       const formattedPhoneNumber = formatPhoneNumber(phoneNumber);
 
-      // Call the BlandAI API through your backend
       const result = await handleAICall(
         prompt,
         formattedPhoneNumber,
@@ -168,14 +189,10 @@ export default function AIAssistantPage() {
       // Poll for updates with exponential backoff
       let pollCount = 0;
       const maxPolls = 30;
-      const pollInterval = 2000; // Start with 2 seconds
+      const base = 2000;
 
       const pollForUpdates = async () => {
-        if (pollCount >= maxPolls) {
-          console.log("Max polls reached");
-          return;
-        }
-
+        if (pollCount >= maxPolls) return;
         try {
           const response = await fetch(
             `/api/bland-ai?callId=${result.callId}`
@@ -188,10 +205,7 @@ export default function AIAssistantPage() {
           }
 
           pollCount++;
-          setTimeout(
-            pollForUpdates,
-            pollInterval * Math.pow(1.5, pollCount) // Exponential backoff
-          );
+          setTimeout(pollForUpdates, base * Math.pow(1.5, pollCount));
         } catch (error) {
           console.error("Error polling for updates:", error);
         }
@@ -203,8 +217,8 @@ export default function AIAssistantPage() {
       const errorMessage =
         err instanceof Error
           ? err.message
-          : typeof err === "object" && err !== null && "details" in err
-          ? String(err.details)
+          : typeof err === "object" && err !== null && "details" in (err as any)
+          ? String((err as any).details)
           : "Failed to initiate call. Please try again.";
 
       setError(errorMessage);
@@ -216,7 +230,6 @@ export default function AIAssistantPage() {
 
   const handleManualRefresh = async () => {
     if (!callResult?.callId) return;
-
     try {
       setIsProcessing(true);
       const refreshResult = await fetch(
@@ -225,13 +238,10 @@ export default function AIAssistantPage() {
 
       setCallResult((prev) => ({
         ...(prev || { callId: callResult.callId }),
-        recording: refreshResult.recording || prev?.recording || null,
+        recording: refreshResult.recording ?? prev?.recording ?? null,
         transcript:
-          refreshResult.transcript ||
-          prev?.transcript ||
-          "No transcript available",
-        summary:
-          refreshResult.summary || prev?.summary || "No summary available",
+          refreshResult.transcript ?? prev?.transcript ?? "No transcript available",
+        summary: refreshResult.summary ?? prev?.summary ?? "No summary available",
       }));
     } catch (error) {
       console.error("Error refreshing call data:", error);
@@ -240,12 +250,7 @@ export default function AIAssistantPage() {
     }
   };
 
-  const voices = [
-    "Cailee (Female)",
-    "James (Male)",
-    "Sarah (Female)",
-    "Michael (Male)",
-  ];
+  const voices = ["Cailee (Female)", "James (Male)", "Sarah (Female)", "Michael (Male)"];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#00AFF0] to-[#0078D4] p-6">
@@ -270,10 +275,7 @@ export default function AIAssistantPage() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             <div>
-              <label
-                htmlFor="phoneNumber"
-                className="block text-xl font-semibold text-white mb-4"
-              >
+              <label htmlFor="phoneNumber" className="block text-xl font-semibold text-white mb-4">
                 Phone Number to Call
               </label>
               <input
@@ -287,10 +289,7 @@ export default function AIAssistantPage() {
             </div>
 
             <div>
-              <label
-                htmlFor="instructions"
-                className="block text-xl font-semibold text-white mb-4"
-              >
+              <label htmlFor="instructions" className="block text-xl font-semibold text-white mb-4">
                 Instructions for the AI
               </label>
               <textarea
@@ -308,7 +307,8 @@ export default function AIAssistantPage() {
               </label>
               <div className="relative">
                 <button
-                  onClick={() => setShowVoices(!showVoices)}
+                  type="button"
+                  onClick={() => setShowVoices((s) => !s)}
                   className="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-white/50 flex items-center justify-between text-lg"
                 >
                   <span>{selectedVoice}</span>
@@ -324,6 +324,7 @@ export default function AIAssistantPage() {
                     {voices.map((voice) => (
                       <button
                         key={voice}
+                        type="button"
                         onClick={() => {
                           setSelectedVoice(voice);
                           setShowVoices(false);
@@ -353,16 +354,31 @@ export default function AIAssistantPage() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={isProcessing || callStatus === "in-progress"}
-              className={`w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition-colors text-lg
-                ${isProcessing || callStatus === "in-progress"
-                ? "bg-blue-400 cursor-not-allowed"
-                : ""}`}
+              className={`w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition-colors text-lg ${
+                isProcessing || callStatus === "in-progress" ? "bg-blue-400 cursor-not-allowed" : ""
+              }`}
             >
               {isProcessing ? (
                 <div className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Processing...
                 </div>
