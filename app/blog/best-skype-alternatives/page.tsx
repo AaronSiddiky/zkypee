@@ -32,7 +32,7 @@ export default function VoIPCommunicationTipsBlog() {
           10 Essential VoIP Communication Tips for Remote Teams
         </h1>
         <div className="text-gray-500 text-sm mb-4">
-          Published: July 15, 2023 · Updated: August 3, 2023
+          Published: July 15, 2025 · Updated: August 3, 2025
         </div>
         <div className="border-b border-gray-200 pb-6">
           <p className="text-xl text-gray-700">

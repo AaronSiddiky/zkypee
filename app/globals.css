@@ -2,141 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Reset margins and padding */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@layer base {
+  html:focus-within { scroll-behavior: smooth; }
+  ::selection { background: rgba(0,0,0,0.08); }
 }
 
-html, body {
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
+@layer components {
+  /* Shadows tuned for light UI */
+  .shadow-soft {
+    @apply shadow-[0_10px_30px_-15px_rgba(0,0,0,0.2)];
+  }
 }
 
-body {
-  color: #111827;  /* dark gray, almost black */
-  background: #00AFF0;
-  overflow-x: hidden;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Removed custom cursor styles */
-.custom-cursor {
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
   display: none;
+  width: 0;
+  height: 0;
 }
-
-.custom-cursor a,
-.custom-cursor button {
-  cursor: auto;
-}
-
-/* Force dark text in white backgrounds */
-.bg-white {
-  color: #111827 !important;
-}
-
-.bg-white input,
-.bg-white textarea,
-.bg-white select {
-  color: #111827 !important;
-}
-
-/* Only use white text on dark/colored backgrounds */
-.bg-[#00AFF0],
-.bg-blue-500,
-.bg-[#0078D4] {
-  color: white;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #008cc0;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #006990;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #005570;
-}
-
-/* Animation for the background grid */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.grid-background {
-  animation: fadeIn 1s ease-in-out;
-}
-
-/* Mobile optimizations */
-@media (max-width: 640px) {
-  html,
-  body {
-    font-size: 14px;
-  }
-
-  input,
-  button,
-  select,
-  textarea {
-    font-size: 16px; /* Prevents iOS zoom on focus */
-  }
-
-  /* Improve touch targets */
-  button,
-  a {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-/* Fix for iOS 100vh issue */
-@supports (-webkit-touch-callout: none) {
-  .min-h-screen {
-    min-height: -webkit-fill-available;
-  }
-}
-
-/* Add this to your global CSS */
-@media (max-width: 768px) {
-  button,
-  .button,
-  a.button {
-    max-width: 200px !important;
-    width: auto !important;
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-  }
-
-  /* More aggressive targeting with !important */
-  .fixed button,
-  [role="dialog"] button,
-  nav button,
-  .menu button {
-    width: 160px !important;
-    max-width: 160px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-}
-
-.hamburger-button {
-  width: 160px !important;
-  max-width: 160px !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
 }

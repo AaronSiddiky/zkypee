@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     description:
       "Microsoft is shutting down Skype in May 2025. Find the best alternative with the cheapest international calling rates and superior features.",
     type: "article",
-    publishedTime: "2023-06-08",
+    publishedTime: "2025-03-01",
     modifiedTime: "2025-03-01",
     authors: ["Zkypee Team"],
   },
@@ -34,7 +34,7 @@ export default function SkypeShuttingDownBlog() {
           May 2025 Shutdown
         </h1>
         <div className="text-gray-500 text-sm mb-4">
-          Published: June 8, 2023 · Updated: March 1, 2025
+          Published: March 1, 2025· Updated: March 1, 2025
         </div>
         <div className="border-b border-gray-200 pb-6">
           <p className="text-xl text-gray-700">

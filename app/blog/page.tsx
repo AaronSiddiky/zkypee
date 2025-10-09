@@ -1,122 +1,132 @@
-import React from 'react';
-import Link from 'next/link';
-import { Metadata } from "next";
+import Link from "next/link";
+import Image from "next/image";
 
-export const metadata: Metadata = {
-  title: "Zkypee Blog | Communication Tips & Best Skype Alternatives",
-  description:
-    "Learn about communication tools, tips, and the best Skype alternatives as Skype is shutting down. Discover why Zkypee is the perfect free Skype replacement.",
-  alternates: {
-    canonical: "https://zkypee.com/blog/skype-shutting-down",
-  },
+type Post = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  date: string;
+  category: string;
+  image?: string;
 };
 
+const posts: Post[] = [
+  {
+    slug: "skype-shutting-down",
+    title: "Best Skype Alternative 2025: Cheapest International Calling",
+    excerpt:
+      "Skype ends May 2025. Compare alternatives and see why Zkypee offers lower rates and a smoother transition.",
+    date: "Mar 1, 2025",
+    category: "Guides",
+    image: "/blog/communication.jpg",
+  },
+  {
+    slug: "voip-communication-tips",
+    title: "10 Essential VoIP Communication Tips for Remote Teams",
+    excerpt:
+      "Practical, battle-tested tips to improve your team’s call quality and collaboration.",
+    date: "Aug 3, 2025",
+    category: "Tips",
+    image: "/blog/remote-work.jpg",
+  },
+  {
+    slug: "video-call-best-practices",
+    title: "Video Call Best Practices Professionals Actually Use",
+    excerpt:
+      "Make every call look and sound like you run a top-tier operation.",
+    date: "Jul 10, 2025",
+    category: "Tips",
+    image: "/blog/video-calls.jpg",
+  },
+  {
+    slug: "secure-online-communication",
+    title: "Security Essentials for Modern Communication",
+    excerpt:
+      "Core practices for keeping calls and messages secure without slowing teams down.",
+    date: "Jun 21, 2025",
+    category: "Security",
+    image: "/blog/security.jpg",
+  },
+];
+
 export default function BlogPage() {
-  const blogPosts = [
-    {
-      title: 'The Future of Communication',
-      excerpt: 'Discover how modern technology is revolutionizing the way we connect with each other.',
-      date: 'March 15, 2024',
-      category: 'Technology',
-      image: '/blog/communication.jpg'
-    },
-    {
-      title: 'Working Remotely: Best Practices',
-      excerpt: 'Learn how to stay productive and connected while working from home.',
-      date: 'March 10, 2024',
-      category: 'Remote Work',
-      image: '/blog/remote-work.jpg'
-    },
-    {
-      title: 'Video Call Tips for Professionals',
-      excerpt: 'Essential tips to make your video calls more professional and effective.',
-      date: 'March 5, 2024',
-      category: 'Tips & Tricks',
-      image: '/blog/video-calls.jpg'
-    },
-    {
-      title: 'Security in Online Communication',
-      excerpt: 'Understanding the importance of secure communication in the digital age.',
-      date: 'March 1, 2024',
-      category: 'Security',
-      image: '/blog/security.jpg'
-    }
-  ];
+  const [featured, ...rest] = posts;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#00AFF0] to-[#0085B3]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Latest Blog Posts
+    <main>
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 pb-8 sm:pt-24">
+        <div className="text-center">
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-neutral-900">
+            Zkypee Blog
           </h1>
-          <p className="text-xl text-white/80 mb-8">
-            Stay updated with the latest news, tips, and insights
+          <p className="mt-3 text-neutral-600 text-lg">
+            Practical guides on calling, messaging, and remote communication.
           </p>
         </div>
 
-        {/* Blog Posts Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {blogPosts.map((post, index) => (
-            <Link 
-              key={index}
-              href={`/blog/${post.title.toLowerCase().replace(/\s+/g, '-')}`}
-              className="group"
-            >
-              <div className="bg-white/10 backdrop-blur-md rounded-xl overflow-hidden transition-transform duration-300 group-hover:transform group-hover:scale-105">
-                <div className="aspect-w-16 aspect-h-9 bg-gray-200">
-                  {/* Image placeholder */}
-                  <div className="w-full h-48 bg-gradient-to-br from-white/5 to-white/10" />
+        <div className="mt-12 grid gap-8 lg:grid-cols-2">
+          <Link
+            href={`/blog/${featured.slug}`}
+            className="group rounded-3xl border border-neutral-200 bg-white overflow-hidden shadow-[0_30px_80px_-40px_rgba(0,0,0,0.25)]"
+          >
+            <div className="relative aspect-[16/9] bg-neutral-100">
+              {featured.image && (
+                <Image
+                  src={featured.image}
+                  alt={featured.title}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              )}
+            </div>
+            <div className="p-6 sm:p-8">
+              <div className="flex items-center gap-2 text-sm text-neutral-600">
+                <span className="rounded-full border border-neutral-200 px-2 py-0.5">
+                  {featured.category}
+                </span>
+                <span>•</span>
+                <span>{featured.date}</span>
+              </div>
+              <h2 className="mt-3 text-2xl sm:text-3xl font-bold text-neutral-900 group-hover:opacity-90">
+                {featured.title}
+              </h2>
+              <p className="mt-3 text-neutral-600">{featured.excerpt}</p>
+              <div className="mt-4 text-neutral-900 font-medium">Read more →</div>
+            </div>
+          </Link>
+
+          <div className="grid sm:grid-cols-2 gap-8">
+            {rest.map((p) => (
+              <Link
+                key={p.slug}
+                href={`/blog/${p.slug}`}
+                className="group rounded-2xl border border-neutral-200 bg-white overflow-hidden hover:shadow-[0_30px_80px_-40px_rgba(0,0,0,0.25)] transition-shadow"
+              >
+                <div className="relative aspect-[16/9] bg-neutral-100">
+                  {p.image && (
+                    <Image src={p.image} alt={p.title} fill className="object-cover" />
+                  )}
                 </div>
                 <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm text-white/60">{post.date}</span>
-                    <span className="text-sm text-white/60 px-3 py-1 rounded-full bg-white/5">
-                      {post.category}
+                  <div className="flex items-center gap-2 text-sm text-neutral-600">
+                    <span className="rounded-full border border-neutral-200 px-2 py-0.5">
+                      {p.category}
                     </span>
+                    <span>•</span>
+                    <span>{p.date}</span>
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-white/90">
-                    {post.title}
+                  <h3 className="mt-3 text-xl font-semibold text-neutral-900 group-hover:opacity-90">
+                    {p.title}
                   </h3>
-                  <p className="text-white/80">
-                    {post.excerpt}
-                  </p>
-                  <div className="mt-4 flex items-center text-white/60 group-hover:text-white/80">
-                    <span>Read more</span>
-                    <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
+                  <p className="mt-2 text-neutral-600">{p.excerpt}</p>
+                  <div className="mt-3 text-neutral-900 font-medium">Read more →</div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
+          </div>
         </div>
-
-        {/* Newsletter Section */}
-        <div className="mt-16 bg-white/10 backdrop-blur-md rounded-xl p-8 text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Subscribe to Our Newsletter
-          </h2>
-          <p className="text-white/80 mb-6">
-            Get the latest updates delivered straight to your inbox
-          </p>
-          <form className="max-w-md mx-auto flex gap-4">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-4 py-3 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/40 focus:outline-none focus:border-white/20"
-            />
-            <button
-              type="submit"
-              className="px-6 py-3 bg-white text-[#00AFF0] rounded-lg font-medium hover:bg-opacity-90 transition-colors"
-            >
-              Subscribe
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

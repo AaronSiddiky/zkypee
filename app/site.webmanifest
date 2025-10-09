@@ -1,0 +1,32 @@
+{
+  "name": "Zkypee",
+  "short_name": "Zkypee",
+  "description": "Modern calling and messaging without the bloat. Crystal‑clear calls, transcripts, and a clean experience across all devices.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/maskable-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false
+}
