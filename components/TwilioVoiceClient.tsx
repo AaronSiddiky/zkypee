@@ -1,16 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Device } from "twilio-client";
+import { Device, type Call } from "@twilio/voice-sdk";
 
 export default function TwilioVoiceClient() {
   const [device, setDevice] = useState<Device | null>(null);
   const [number, setNumber] = useState("");
   const [status, setStatus] = useState("Loading...");
   const [isMuted, setIsMuted] = useState(false);
-  const connectionRef = useRef<any>(null);
-  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([]);
-  const [selectedAudioOutput, setSelectedAudioOutput] = useState<string>("");
+  const callRef = useRef<Call | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -20,24 +18,8 @@ export default function TwilioVoiceClient() {
       try {
         console.log("Setting up Twilio device...");
 
-        // First, get microphone permission
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-
-        // Get available audio output devices
-        if (navigator.mediaDevices.enumerateDevices) {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const audioOutputs = devices.filter(
-            (device) => device.kind === "audiooutput"
-          );
-          if (mounted) {
-            setAudioDevices(audioOutputs);
-            if (audioOutputs.length > 0) {
-              setSelectedAudioOutput(audioOutputs[0].deviceId);
-            }
-          }
-        }
+        // Request microphone permission up-front for a better UX
+        await navigator.mediaDevices.getUserMedia({ audio: true });
 
         // Get token from server
         const response = await fetch("/api/twilio/token");
@@ -50,62 +32,23 @@ export default function TwilioVoiceClient() {
           throw new Error("No token received from server");
         }
 
-        console.log("Token received, initializing device");
+        console.log("Token received, initializing device (v2)");
 
-        // Create new device
-        const newDevice = new Device();
+        // Create a new Device with the token (v2)
+        const newDevice = new Device(data.token, {
+          logLevel: "debug",
+        });
         currentDevice = newDevice;
 
-        // Set up event handlers
-        newDevice.on("ready", () => {
-          if (!mounted) return;
-          console.log("✅ Twilio device is ready");
-          setStatus("Ready");
-        });
-
-        newDevice.on("error", (error) => {
+        // Basic error logging
+        newDevice.on("error", (error: any) => {
           if (!mounted) return;
           console.error("❌ Twilio device error:", error);
           setStatus(`Error: ${error.message}`);
         });
 
-        newDevice.on("connect", (conn) => {
-          if (!mounted) return;
-          console.log("📞 Call connected", conn);
-          connectionRef.current = conn;
-
-          // Set volume to maximum
-          conn.volume(1);
-
-          // Set up connection event handlers
-          conn.on("volume", (vol: number) => {
-            console.log(`Volume changed: ${vol}`);
-          });
-
-          conn.on("warning", (warning: { message: string }) => {
-            console.warn(`Connection warning: ${warning.message}`);
-          });
-
-          conn.on("error", (error: { message: string }) => {
-            console.error(`Connection error: ${error.message}`);
-          });
-
-          setStatus("On call");
-        });
-
-        newDevice.on("disconnect", () => {
-          if (!mounted) return;
-          console.log("📞 Call disconnected");
-          connectionRef.current = null;
-          setStatus("Ready");
-        });
-
-        // Initialize the device with the token
-        await newDevice.setup(data.token, {
-          debug: true,
-          warnings: true,
-          allowIncomingWhileBusy: false,
-        });
+        // Register the device to enable inbound readiness (optional for outbound)
+        await newDevice.register();
 
         if (mounted) {
           setDevice(newDevice);
@@ -134,45 +77,37 @@ export default function TwilioVoiceClient() {
     };
   }, []);
 
-  // Change audio output device if supported
-  useEffect(() => {
-    if (!selectedAudioOutput || !connectionRef.current) return;
-
-    try {
-      if (
-        connectionRef.current.mediaStream &&
-        connectionRef.current.mediaStream.setSinkId
-      ) {
-        connectionRef.current.mediaStream
-          .setSinkId(selectedAudioOutput)
-          .then(() =>
-            console.log(`Audio output set to: ${selectedAudioOutput}`)
-          )
-          .catch((err: Error) =>
-            console.error("Error setting audio output:", err)
-          );
-      }
-    } catch (err: unknown) {
-      console.error("Error changing audio output:", err);
-    }
-  }, [selectedAudioOutput, connectionRef.current]);
-
   const makeCall = async () => {
-    if (!device || !number || connectionRef.current) return;
+    if (!device || !number || callRef.current) return;
 
     try {
       console.log(`📞 Making call to ${number}`);
       setStatus("Connecting...");
 
-      // Params for the call
-      const params: Record<string, string> = {
-        To: number,
-        // Add any additional parameters needed for your TwiML app
-      };
+      // Connect and store the Call (v2)
+      callRef.current = await device.connect({
+        params: { To: number },
+      });
 
-      // Connect and store the connection
-      connectionRef.current = await device.connect(params);
-      console.log("Call initiated:", connectionRef.current);
+      if (!callRef.current) throw new Error("Failed to start call");
+
+      // Attach call event handlers
+      callRef.current.on("accept", () => {
+        console.log("📞 Call connected");
+        setStatus("On call");
+      });
+
+      callRef.current.on("disconnect", () => {
+        console.log("📴 Call disconnected");
+        callRef.current = null;
+        setIsMuted(false);
+        setStatus("Ready");
+      });
+
+      callRef.current.on("error", (err: any) => {
+        console.error("Call error:", err);
+        setStatus(`Error: ${err?.message || "Call error"}`);
+      });
     } catch (error) {
       console.error("❌ Call error:", error);
       setStatus(
@@ -185,23 +120,23 @@ export default function TwilioVoiceClient() {
 
   const hangUp = () => {
     console.log("Hanging up call");
-    if (connectionRef.current) {
-      connectionRef.current.disconnect();
-      connectionRef.current = null;
+    if (callRef.current) {
+      callRef.current.disconnect();
+      callRef.current = null;
     } else if (device) {
       device.disconnectAll();
     }
   };
 
   const toggleMute = () => {
-    if (!connectionRef.current) return;
+    if (!callRef.current) return;
 
     if (isMuted) {
-      connectionRef.current.mute(false);
+      callRef.current.mute(false);
       setIsMuted(false);
       console.log("Unmuted call");
     } else {
-      connectionRef.current.mute(true);
+      callRef.current.mute(true);
       setIsMuted(true);
       console.log("Muted call");
     }
@@ -250,30 +185,6 @@ export default function TwilioVoiceClient() {
           Enter full number with country code (e.g., +1 for US)
         </p>
       </div>
-
-      {audioDevices.length > 0 && (
-        <div className="mb-4">
-          <label
-            htmlFor="audioOutput"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Audio Output
-          </label>
-          <select
-            id="audioOutput"
-            value={selectedAudioOutput}
-            onChange={(e) => setSelectedAudioOutput(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded"
-            disabled={isOnCall}
-          >
-            {audioDevices.map((device) => (
-              <option key={device.deviceId} value={device.deviceId}>
-                {device.label || `Speaker ${device.deviceId.substr(0, 5)}...`}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
 
       <div className="flex space-x-2">
         {!isOnCall ? (
