@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     const admin = requireAdmin();
 
     // First try to get usage by fingerprint
-    const { data: fingerprintData, error: fingerprintError } = await admin
+    const { data: fingerprintData, error: fingerprintError } = await (admin as any)
       .from("trial_calls")
       .select("count")
       .eq("device_fingerprint", fingerprint)
@@ -42,15 +42,15 @@ export async function GET(request: Request) {
     // If we found existing data, use it
     if (fingerprintData) {
       const result = {
-        available: fingerprintData.count < 2,
-        count: fingerprintData.count,
+        available: (fingerprintData as any).count < 2,
+        count: (fingerprintData as any).count,
       };
       console.log("[TRIAL API] Using fingerprint data:", result);
       return NextResponse.json(result);
     }
 
     // If no fingerprint record, try by IP
-    const { data: ipData, error: ipError } = await admin
+    const { data: ipData, error: ipError } = await (admin as any)
       .from("trial_calls")
       .select("count")
       .filter("ip_address", "eq", ipAddress)
@@ -59,8 +59,8 @@ export async function GET(request: Request) {
     // If we found IP data, use it
     if (ipData) {
       const result = {
-        available: ipData.count < 2,
-        count: ipData.count,
+        available: (ipData as any).count < 2,
+        count: (ipData as any).count,
       };
       console.log("[TRIAL API] Using IP data:", result);
       return NextResponse.json(result);
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
     // If no record exists, create one
     console.log("[TRIAL API] No records found, creating new record");
 
-    const { error } = await admin.from("trial_calls").upsert(
+    const { error } = await (admin as any).from("trial_calls").upsert(
       {
         device_fingerprint: fingerprint,
         ip_address: ipAddress,

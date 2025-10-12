@@ -1,9 +1,10 @@
 import { NextResponse, NextRequest } from "next/server";
 import twilio from "twilio";
 import { corsHeaders } from "@/lib/cors";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { Database } from "@/lib/database.types";
 import { addPhoneNumberToUser } from "@/lib/phoneNumbers";
 
 // Define interfaces for better type safety
@@ -81,11 +82,8 @@ export async function POST(request: NextRequest) {
   try {
     console.log("[API:purchase-number] Starting purchase process");
 
-    // Initialize Supabase client with explicit cookie store to ensure it works
-    const cookieStore = cookies();
-    supabase = createServerComponentClient({
-      cookies: () => cookieStore,
-    });
+    // Initialize Supabase client for route handler
+    supabase = createRouteHandlerClient<Database>({ cookies });
 
     // Get the phone number, friendly name, and user ID from the request
     const {
@@ -279,10 +277,8 @@ export async function POST(request: NextRequest) {
         `[API:purchase-number] Adding phone number to user account with userId: ${userId}`
       );
 
-      // Re-initialize the server component client to ensure it's fresh
-      const freshSupabase = createServerComponentClient({
-        cookies: () => cookieStore,
-      });
+      // Create a fresh route handler client
+      const freshSupabase = createRouteHandlerClient<Database>({ cookies });
 
       // Use our updated function to add the phone number to the user's account
       updateSuccess = await addPhoneNumberToUser(

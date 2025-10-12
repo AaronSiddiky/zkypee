@@ -167,7 +167,9 @@ export async function isTrialAvailable(
       fingerprint.substring(0, 8) + "..."
     );
 
-    const { data: fingerprintData, error: fingerprintError } = await supabase
+    const { data: fingerprintData, error: fingerprintError } = await (
+      supabase as any
+    )
       .from("trial_calls")
       .select("count")
       .eq("device_fingerprint", fingerprint)
@@ -187,8 +189,8 @@ export async function isTrialAvailable(
     // If we found existing data, use it
     if (fingerprintData) {
       const result = {
-        available: fingerprintData.count < 2,
-        count: fingerprintData.count,
+        available: (fingerprintData as any).count < 2,
+        count: (fingerprintData as any).count,
       };
       console.log(
         "[TRIAL DB] isTrialAvailable - Using fingerprint data:",
@@ -199,7 +201,7 @@ export async function isTrialAvailable(
 
     // If no fingerprint record, try by IP
     console.log("[TRIAL DB] isTrialAvailable - Querying by IP:", ipAddress);
-    const { data: ipData, error: ipError } = await supabase
+    const { data: ipData, error: ipError } = await (supabase as any)
       .from("trial_calls")
       .select("count")
       .filter("ip_address", "eq", ipAddress)
@@ -219,8 +221,8 @@ export async function isTrialAvailable(
     // If we found IP data, use it
     if (ipData) {
       const result = {
-        available: ipData.count < 2,
-        count: ipData.count,
+        available: (ipData as any).count < 2,
+        count: (ipData as any).count,
       };
       console.log("[TRIAL DB] isTrialAvailable - Using IP data:", result);
       return result;
@@ -241,18 +243,18 @@ export async function isTrialAvailable(
         return { available: true, count: 0 };
       }
 
-      const { error } = await admin.from("trial_calls").upsert(
+      const { error } = await (admin as any).from("trial_calls").upsert(
         {
           device_fingerprint: fingerprint,
           ip_address: ipAddress,
           last_call_at: new Date().toISOString(),
           count: 0,
           total_duration: 0,
-        },
+        } as any,
         {
           onConflict: "device_fingerprint",
           ignoreDuplicates: true,
-        }
+        } as any
       );
 
       if (error) {
@@ -351,7 +353,7 @@ export async function recordTrialUsage(
     }
 
     // First check if record exists
-    const { data: existingRecord } = await admin
+    const { data: existingRecord } = await (admin as any)
       .from("trial_calls")
       .select("count, total_duration")
       .eq("device_fingerprint", fingerprint)
@@ -361,16 +363,16 @@ export async function recordTrialUsage(
       // Update existing record
       console.log("[TRIAL DB] recordTrialUsage - Updating existing record");
 
-      const { error } = await admin
+      const { error } = await (admin as any)
         .from("trial_calls")
         .update({
-          count: existingRecord.count + 1,
-          total_duration: (existingRecord.total_duration || 0) + duration,
+          count: ((existingRecord as any).count as number) + 1,
+          total_duration: (((existingRecord as any).total_duration || 0) as number) + duration,
           last_call_at: new Date().toISOString(),
           last_call_sid: callSid,
           last_phone_number: phoneNumber,
           ip_address: ipAddress, // Update IP address if it changed
-        })
+        } as any)
         .eq("device_fingerprint", fingerprint);
 
       if (error) {
@@ -388,7 +390,7 @@ export async function recordTrialUsage(
       // Create new record
       console.log("[TRIAL DB] recordTrialUsage - Creating new record");
 
-      const { error } = await admin.from("trial_calls").upsert(
+      const { error } = await (admin as any).from("trial_calls").upsert(
         {
           device_fingerprint: fingerprint,
           ip_address: ipAddress,
@@ -397,11 +399,11 @@ export async function recordTrialUsage(
           last_phone_number: phoneNumber,
           total_duration: duration,
           count: 1,
-        },
+        } as any,
         {
           onConflict: "device_fingerprint",
           ignoreDuplicates: false,
-        }
+        } as any
       );
 
       if (error) {
@@ -496,7 +498,9 @@ export async function getTrialUsage(
       fingerprint.substring(0, 8) + "..."
     );
 
-    const { data: fingerprintData, error: fingerprintError } = await supabase
+    const { data: fingerprintData, error: fingerprintError } = await (
+      supabase as any
+    )
       .from("trial_calls")
       .select("count, total_duration, last_call_at")
       .eq("device_fingerprint", fingerprint)
@@ -506,9 +510,9 @@ export async function getTrialUsage(
       found: !!fingerprintData,
       data: fingerprintData
         ? {
-            count: fingerprintData.count,
-            total_duration: fingerprintData.total_duration,
-            last_call_at: fingerprintData.last_call_at,
+            count: (fingerprintData as any).count,
+            total_duration: (fingerprintData as any).total_duration,
+            last_call_at: (fingerprintData as any).last_call_at,
           }
         : null,
       error: fingerprintError
@@ -522,10 +526,10 @@ export async function getTrialUsage(
     // If we found existing data, use it
     if (fingerprintData) {
       const result = {
-        callsUsed: fingerprintData.count,
-        callsRemaining: Math.max(0, 2 - fingerprintData.count),
-        totalDuration: fingerprintData.total_duration || 0,
-        lastCallAt: fingerprintData.last_call_at,
+        callsUsed: (fingerprintData as any).count,
+        callsRemaining: Math.max(0, 2 - (fingerprintData as any).count),
+        totalDuration: (fingerprintData as any).total_duration || 0,
+        lastCallAt: (fingerprintData as any).last_call_at,
       };
       console.log("[TRIAL DB] getTrialUsage - Using fingerprint data:", result);
       return result;
@@ -533,7 +537,7 @@ export async function getTrialUsage(
 
     // If no fingerprint record, try by IP
     console.log("[TRIAL DB] getTrialUsage - Querying by IP:", ipAddress);
-    const { data: ipData, error: ipError } = await supabase
+    const { data: ipData, error: ipError } = await (supabase as any)
       .from("trial_calls")
       .select("count, total_duration, last_call_at")
       .filter("ip_address", "eq", ipAddress)
@@ -543,9 +547,9 @@ export async function getTrialUsage(
       found: !!ipData,
       data: ipData
         ? {
-            count: ipData.count,
-            total_duration: ipData.total_duration,
-            last_call_at: ipData.last_call_at,
+            count: (ipData as any).count,
+            total_duration: (ipData as any).total_duration,
+            last_call_at: (ipData as any).last_call_at,
           }
         : null,
       error: ipError
@@ -559,10 +563,10 @@ export async function getTrialUsage(
     // If we found IP data, use it
     if (ipData) {
       const result = {
-        callsUsed: ipData.count,
-        callsRemaining: Math.max(0, 2 - ipData.count),
-        totalDuration: ipData.total_duration || 0,
-        lastCallAt: ipData.last_call_at,
+        callsUsed: (ipData as any).count,
+        callsRemaining: Math.max(0, 2 - (ipData as any).count),
+        totalDuration: (ipData as any).total_duration || 0,
+        lastCallAt: (ipData as any).last_call_at,
       };
       console.log("[TRIAL DB] getTrialUsage - Using IP data:", result);
       return result;
@@ -584,7 +588,7 @@ export async function getTrialUsage(
       }
 
       // Check one more time if the record exists to avoid race conditions
-      const { data: doubleCheckRecord } = await admin
+      const { data: doubleCheckRecord } = await (admin as any)
         .from("trial_calls")
         .select("count, total_duration, last_call_at")
         .eq("device_fingerprint", fingerprint)
@@ -595,27 +599,27 @@ export async function getTrialUsage(
           "[TRIAL DB] getTrialUsage - Record found on double-check, using existing record"
         );
         const result = {
-          callsUsed: doubleCheckRecord.count,
-          callsRemaining: Math.max(0, 2 - doubleCheckRecord.count),
-          totalDuration: doubleCheckRecord.total_duration || 0,
-          lastCallAt: doubleCheckRecord.last_call_at,
+          callsUsed: (doubleCheckRecord as any).count,
+          callsRemaining: Math.max(0, 2 - (doubleCheckRecord as any).count),
+          totalDuration: (doubleCheckRecord as any).total_duration || 0,
+          lastCallAt: (doubleCheckRecord as any).last_call_at,
         };
         return result;
       }
 
       // If still no record, try to insert with upsert to handle race conditions
-      const { error } = await admin.from("trial_calls").upsert(
+      const { error } = await (admin as any).from("trial_calls").upsert(
         {
           device_fingerprint: fingerprint,
           ip_address: ipAddress,
           last_call_at: new Date().toISOString(),
           count: 0,
           total_duration: 0,
-        },
+        } as any,
         {
           onConflict: "device_fingerprint",
           ignoreDuplicates: true,
-        }
+        } as any
       );
 
       if (error) {
@@ -708,9 +712,9 @@ export async function debugQueryTrialCalls(): Promise<any> {
 
     // Sanitize the data for logging
     const sanitizedData = data.map((record) => ({
-      ...record,
-      device_fingerprint: record.device_fingerprint?.substring(0, 8) + "...",
-      last_call_sid: record.last_call_sid?.substring(0, 8) + "...",
+      ...(record as any),
+      device_fingerprint: (record as any).device_fingerprint?.substring(0, 8) + "...",
+      last_call_sid: (record as any).last_call_sid?.substring(0, 8) + "...",
     }));
 
     console.log("[TRIAL DB] debugQueryTrialCalls - Results:", sanitizedData);
@@ -738,12 +742,12 @@ export async function linkTrialToUser(
   try {
     const admin = safeAdmin();
 
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from("trial_calls")
       .update({
         user_id: userId,
         converted_to_signup: true,
-      })
+      } as any)
       .eq("device_fingerprint", fingerprint);
 
     if (error) {

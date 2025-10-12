@@ -386,7 +386,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Record the call in the database
-        const { error } = await supabase.from("call_logs").insert({
+        const { error } = await (supabase as any).from("call_logs").insert({
           user_id: session.user.id,
           call_sid: activeCall.parameters.CallSid,
           duration: callDuration,
@@ -402,7 +402,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
 
         // Deduct credits from the user's account
         if (estimatedCost > 0) {
-          const { error: creditError } = await supabase.rpc("deduct_credits", {
+          const { error: creditError } = await (supabase as any).rpc("deduct_credits", {
             user_id: session.user.id,
             amount: estimatedCost,
           });
@@ -701,7 +701,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
       const admin = requireAdmin();
 
       // Check for record by IP
-      const { data: ipData, error: ipError } = await admin
+      const { data: ipData, error: ipError } = await (admin as any)
         .from("trial_calls")
         .select("*")
         .filter("ip_address", "eq", ipAddress)
@@ -713,10 +713,10 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
           found: !!ipData,
           data: ipData
             ? {
-                ip_address: ipData.ip_address,
-                count: ipData.count,
-                last_call_at: ipData.last_call_at,
-                fingerprint: ipData.device_fingerprint?.substring(0, 8) + "...",
+                ip_address: (ipData as any).ip_address,
+                count: (ipData as any).count,
+                last_call_at: (ipData as any).last_call_at,
+                fingerprint: (ipData as any).device_fingerprint?.substring(0, 8) + "...",
               }
             : null,
           error: ipError
@@ -729,7 +729,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
       );
 
       // Check for record by fingerprint
-      const { data: fingerprintData, error: fingerprintError } = await admin
+      const { data: fingerprintData, error: fingerprintError } = await (admin as any)
         .from("trial_calls")
         .select("*")
         .eq("device_fingerprint", fingerprint)
@@ -741,11 +741,11 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
           found: !!fingerprintData,
           data: fingerprintData
             ? {
-                ip_address: fingerprintData.ip_address,
-                count: fingerprintData.count,
-                last_call_at: fingerprintData.last_call_at,
+                ip_address: (fingerprintData as any).ip_address,
+                count: (fingerprintData as any).count,
+                last_call_at: (fingerprintData as any).last_call_at,
                 fingerprint:
-                  fingerprintData.device_fingerprint?.substring(0, 8) + "...",
+                  (fingerprintData as any).device_fingerprint?.substring(0, 8) + "...",
               }
             : null,
           error: fingerprintError
@@ -758,7 +758,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
       );
 
       // Get all records for debugging
-      const { data: allRecords, error: allRecordsError } = await admin
+      const { data: allRecords, error: allRecordsError } = await (admin as any)
         .from("trial_calls")
         .select("*")
         .order("last_call_at", { ascending: false })
@@ -769,7 +769,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
         {
           count: allRecords?.length || 0,
           records:
-            allRecords?.map((r) => ({
+            allRecords?.map((r: any) => ({
               ip_address: r.ip_address,
               count: r.count,
               last_call_at: r.last_call_at,
@@ -1552,7 +1552,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
       }
 
       // First, get the credit balance directly from Supabase
-      const { data: userData, error: userError } = await supabase
+      const { data: userData, error: userError } = await (supabase as any)
         .from("users")
         .select("credit_balance")
         .eq("id", user.id)
@@ -1567,7 +1567,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
 
-      const creditBalance = userData?.credit_balance ?? 0;
+      const creditBalance = (userData as any)?.credit_balance ?? 0;
       console.log(
         `[checkCredits] User credit balance from Supabase: ${creditBalance}`
       );

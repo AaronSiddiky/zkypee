@@ -2,13 +2,13 @@ import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import dynamic from "next/dynamic";
+import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import Providers from '@/components/providers/Providers';
 
 const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
-
-const Providers = dynamic(() => import("./providers"), { ssr: false });
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://zkypee.com"),
@@ -46,10 +46,6 @@ export const metadata: Metadata = {
     apple: [{ url: "/apple-touch-icon.png" }],
   },
   manifest: "/site.webmanifest",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#ffffff" },
-  ],
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Zkypee" },
   formatDetection: { telephone: false, date: false, email: false, address: false },
   category: "technology",
@@ -61,6 +57,10 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#ffffff" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -98,9 +98,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
 
         <Providers>
-          <Header />
-          <main id="main">{children}</main>
-          <Footer />
+          <Suspense fallback={null}>
+            <Header />
+            <main id="main">{children}</main>
+            <Footer />
+          </Suspense>
         </Providers>
       </body>
     </html>

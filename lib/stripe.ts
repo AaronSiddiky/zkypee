@@ -39,7 +39,7 @@ export const getStripe = () => {
 
     try {
       stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-        apiVersion: "2023-10-16" as Stripe.LatestApiVersion, // Use the latest API version
+        apiVersion: "2025-09-30.clover" as unknown as Stripe.LatestApiVersion,
       });
       console.log("Stripe initialized successfully");
     } catch (error) {
@@ -233,7 +233,7 @@ export async function addSubscriptionIdToUser(
     }
 
     // Get current subscription IDs or initialize empty array
-    const currentSubscriptionIds = userData?.stripe_subscription_ids || [];
+    const currentSubscriptionIds = (userData as any)?.stripe_subscription_ids || [];
 
     // Don't add duplicate subscription IDs
     if (!currentSubscriptionIds.includes(subscriptionId)) {
@@ -243,10 +243,10 @@ export async function addSubscriptionIdToUser(
       ];
 
       // Update the user record
-      const { error: updateError } = await admin
+      const { error: updateError } = await (admin as any)
         .from("users")
         .update({
-          stripe_subscription_ids: updatedSubscriptionIds,
+          stripe_subscription_ids: updatedSubscriptionIds as any,
         })
         .eq("id", userId);
 

@@ -39,7 +39,7 @@ export async function GET(request: Request) {
     const admin = requireAdmin();
 
     // First try to get usage by fingerprint
-    const { data: fingerprintData, error: fingerprintError } = await admin
+    const { data: fingerprintData, error: fingerprintError } = await (admin as any)
       .from("trial_calls")
       .select("count, total_duration, last_call_at")
       .eq("device_fingerprint", fingerprint)
@@ -48,17 +48,17 @@ export async function GET(request: Request) {
     // If we found existing data, use it
     if (fingerprintData) {
       const result = {
-        callsUsed: fingerprintData.count,
-        callsRemaining: Math.max(0, 2 - fingerprintData.count),
-        totalDuration: fingerprintData.total_duration || 0,
-        lastCallAt: fingerprintData.last_call_at,
+        callsUsed: (fingerprintData as any).count,
+        callsRemaining: Math.max(0, 2 - (fingerprintData as any).count),
+        totalDuration: (fingerprintData as any).total_duration || 0,
+        lastCallAt: (fingerprintData as any).last_call_at,
       };
       console.log("[TRIAL API] Using fingerprint data:", result);
       return NextResponse.json(result);
     }
 
     // If no fingerprint record, try by IP
-    const { data: ipData, error: ipError } = await admin
+    const { data: ipData, error: ipError } = await (admin as any)
       .from("trial_calls")
       .select("count, total_duration, last_call_at")
       .filter("ip_address", "eq", ipAddress)
@@ -67,10 +67,10 @@ export async function GET(request: Request) {
     // If we found IP data, use it
     if (ipData) {
       const result = {
-        callsUsed: ipData.count,
-        callsRemaining: Math.max(0, 2 - ipData.count),
-        totalDuration: ipData.total_duration || 0,
-        lastCallAt: ipData.last_call_at,
+        callsUsed: (ipData as any).count,
+        callsRemaining: Math.max(0, 2 - (ipData as any).count),
+        totalDuration: (ipData as any).total_duration || 0,
+        lastCallAt: (ipData as any).last_call_at,
       };
       console.log("[TRIAL API] Using IP data:", result);
       return NextResponse.json(result);
@@ -79,7 +79,7 @@ export async function GET(request: Request) {
     // If no record exists, create one
     console.log("[TRIAL API] No records found, creating new record");
 
-    const { error } = await admin.from("trial_calls").upsert(
+    const { error } = await (admin as any).from("trial_calls").upsert(
       {
         device_fingerprint: fingerprint,
         ip_address: ipAddress,

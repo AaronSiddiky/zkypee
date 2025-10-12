@@ -96,21 +96,21 @@ export default function TrialAnalyticsDashboard() {
 
         // Get average duration
         const { data: durationData, error: durationError } =
-          await requireAdmin().rpc("get_average_trial_duration");
+          await (requireAdmin() as any).rpc("get_average_trial_duration");
 
         if (durationError) throw durationError;
 
         // Get trials by day
-        const { data: dailyData, error: dailyError } = await requireAdmin().rpc(
+        const { data: dailyData, error: dailyError } = await (requireAdmin() as any).rpc(
           "get_daily_trial_counts",
-          { days_back: dateRange === "7d" ? 7 : 30 }
+          { days_back: dateRange === "7d" ? 7 : 30 } as any
         );
 
         if (dailyError) throw dailyError;
 
         // Get conversions by variant
         const { data: variantData, error: variantError } =
-          await requireAdmin().rpc("get_conversion_by_variant");
+          await (requireAdmin() as any).rpc("get_conversion_by_variant");
 
         if (variantError) throw variantError;
 
@@ -278,9 +278,7 @@ export default function TrialAnalyticsDashboard() {
 
         {/* Variant conversion chart */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">
-            Conversion by Variant
-          </h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-4">Conversion by Variant</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -289,19 +287,14 @@ export default function TrialAnalyticsDashboard() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) =>
-                    `${name}: ${(percent * 100).toFixed(0)}%`
-                  }
+                  label={(props: any) => `${props.name}: ${((props.percent as number) * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="count"
                   nameKey="variant"
                 >
                   {stats.conversionsByVariant.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />

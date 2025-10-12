@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const admin = requireAdmin();
 
     // First check if record exists
-    const { data: existingRecord } = await admin
+    const { data: existingRecord } = await (admin as any)
       .from("trial_calls")
       .select("count, total_duration")
       .eq("device_fingerprint", fingerprint)
@@ -43,11 +43,11 @@ export async function POST(request: Request) {
       // Update existing record
       console.log("[TRIAL API] Updating existing record");
 
-      const { error } = await admin
+      const { error } = await (admin as any)
         .from("trial_calls")
         .update({
-          count: existingRecord.count + 1,
-          total_duration: (existingRecord.total_duration || 0) + duration,
+          count: (existingRecord as any).count + 1,
+          total_duration: ((existingRecord as any).total_duration || 0) + duration,
           last_call_at: new Date().toISOString(),
           last_call_sid: callSid,
           last_phone_number: phoneNumber,
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       // Create new record
       console.log("[TRIAL API] Creating new record");
 
-      const { error } = await admin.from("trial_calls").upsert(
+      const { error } = await (admin as any).from("trial_calls").upsert(
         {
           device_fingerprint: fingerprint,
           ip_address: ipAddress,

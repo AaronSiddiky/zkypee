@@ -42,7 +42,7 @@ export default function ThankYouPage() {
       console.log("Fetching credit balance directly from Supabase");
 
       // Directly query the users table in Supabase
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("users")
         .select("credit_balance")
         .eq("id", user.id)
@@ -57,9 +57,9 @@ export default function ThankYouPage() {
       if (data) {
         console.log(
           "Credit balance fetched successfully:",
-          data.credit_balance
+          (data as any).credit_balance
         );
-        setCreditBalance(data.credit_balance || 0);
+        setCreditBalance((data as any).credit_balance || 0);
       } else {
         console.log("User not found in database, setting credit balance to 0");
         setCreditBalance(0);

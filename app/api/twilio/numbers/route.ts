@@ -74,14 +74,14 @@ export async function GET(request: Request) {
         } as Record<NumberType, number>;
 
         if (pricingInfo && pricingInfo.phoneNumberPrices) {
-          pricingInfo.phoneNumberPrices.forEach((price) => {
+          pricingInfo.phoneNumberPrices.forEach((price: any) => {
             // Convert from string to number and from USD to a numeric value
+            const current = (price.currentPrice ?? price.current_price) as string | number | undefined;
             const monthlyPrice =
-              typeof price.current_price === "string"
-                ? parseFloat(price.current_price)
-                : 0;
-            if (price.number_type) {
-              const type = price.number_type.toLowerCase() as NumberType;
+              typeof current === "string" ? parseFloat(current) : typeof current === "number" ? current : 0;
+            const nType = (price.numberType ?? price.number_type) as string | undefined;
+            if (nType) {
+              const type = nType.toLowerCase() as NumberType;
               countryPricing[type] = monthlyPrice;
             }
           });

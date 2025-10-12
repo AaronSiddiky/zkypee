@@ -33,8 +33,8 @@ function storeMessage(number: string, message: Message): void {
 export async function POST(req: Request) {
   try {
     console.log('📩 SMS Webhook called');
-    const headersList = headers();
-    console.log('Headers:', Object.fromEntries(headersList.entries()));
+    const headersObj = Object.fromEntries(req.headers.entries());
+    console.log('Headers:', headersObj);
     
     // Parse form data from Twilio
     const formData = await req.formData();

@@ -54,10 +54,16 @@ export default function CallCreditInfo({
         }
 
         // First, get the credit balance directly from Supabase
-        const { data: userData, error: userError } = await supabase
+        if (!user?.id) {
+          setError("Please log in to check credit information");
+          setLoading(false);
+          return;
+        }
+
+        const { data: userData, error: userError } = await (supabase as any)
           .from("users")
           .select("credit_balance")
-          .eq("id", user?.id)
+          .eq("id", user.id)
           .maybeSingle();
 
         if (userError) {

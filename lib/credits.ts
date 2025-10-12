@@ -58,7 +58,7 @@ export async function addCreditsToUser(
       console.log(`User not found with ID: ${userId}, will create new user`);
 
       // Create new user with the initial credits
-      const { error: insertError } = await db.from("users").insert([
+      const { error: insertError } = await (db as any).from("users").insert([
         {
           id: userId,
           credit_balance: creditsToAdd,
@@ -83,14 +83,14 @@ export async function addCreditsToUser(
       }
     } else {
       // User exists, update their balance
-      currentBalance = users[0]?.credit_balance || 0;
+      currentBalance = (users as any)[0]?.credit_balance || 0;
       const newBalance = currentBalance + creditsToAdd;
       console.log(
         `Updating credit balance from ${currentBalance} to ${newBalance}`
       );
 
       // Update user's credit balance
-      const { error: updateError } = await db
+      const { error: updateError } = await (db as any)
         .from("users")
         .update({
           credit_balance: newBalance,
@@ -133,7 +133,7 @@ export async function addCreditsToUser(
     console.log(`Recording transaction`);
 
     // Record the transaction
-    const { error: transactionError } = await db.from("transactions").insert({
+    const { error: transactionError } = await (db as any).from("transactions").insert({
       user_id: userId,
       amount,
       credits_added: creditsToAdd,
@@ -193,7 +193,7 @@ export async function hasEnoughCredits(
       return false;
     }
 
-    const creditBalance = parseFloat(users[0].credit_balance);
+    const creditBalance = parseFloat((users as any)[0].credit_balance);
     console.log(`[hasEnoughCredits] User credit balance: ${creditBalance}`);
 
     // If a phone number is provided, use the RateService to get the specific rate
@@ -273,7 +273,7 @@ export async function getCreditCallInfo(
       throw new Error(`User not found with ID: ${userId}`);
     }
 
-    const creditBalance = parseFloat(users[0].credit_balance);
+    const creditBalance = parseFloat((users as any)[0].credit_balance);
     console.log(`[getCreditCallInfo] User credit balance: ${creditBalance}`);
 
     // Get rate information for the destination
@@ -412,7 +412,7 @@ export async function deductCreditsForCall(
 
     // Calculate credits to deduct (rounded to 2 decimal places for billing accuracy)
     const creditsToDeduct = parseFloat((rate * durationMinutes).toFixed(2));
-    const currentBalance = parseFloat(users[0].credit_balance);
+    const currentBalance = parseFloat(((users as any)[0].credit_balance));
     const newBalance = Math.max(
       0,
       parseFloat((currentBalance - creditsToDeduct).toFixed(2))
@@ -426,7 +426,7 @@ export async function deductCreditsForCall(
     });
 
     // Update user's credit balance - this is the most important part
-    const { error: updateError } = await supabase
+    const { error: updateError } = await (supabase as any)
       .from("users")
       .update({ credit_balance: newBalance })
       .eq("id", userId);
@@ -440,7 +440,7 @@ export async function deductCreditsForCall(
 
     // Only try to update essential fields in the call log
     try {
-      const { error: logError } = await supabase
+      const { error: logError } = await (supabase as any)
         .from("call_logs")
         .update({
           duration_minutes: durationMinutes,
@@ -528,7 +528,7 @@ export async function getUserCreditBalance(
       const email = userData.user?.email || "unknown@example.com";
 
       // Create the user with 0 credits
-      const { error: insertError } = await supabase.from("users").insert([
+      const { error: insertError } = await (supabase as any).from("users").insert([
         {
           id: userId,
           email: email,
@@ -555,17 +555,17 @@ export async function getUserCreditBalance(
       // Use the first record's credit balance
       console.log(
         "Credit balance from first record:",
-        existingUser[0].credit_balance
+        (existingUser as any)[0].credit_balance
       );
-      return existingUser[0].credit_balance || 0;
+      return (existingUser as any)[0].credit_balance || 0;
     }
 
     // User exists (single record), directly return their credit balance
     console.log(
       "Credit balance fetched successfully:",
-      existingUser[0].credit_balance
+      (existingUser as any)[0].credit_balance
     );
-    return existingUser[0].credit_balance || 0;
+    return (existingUser as any)[0].credit_balance || 0;
   } catch (error) {
     console.error("Error in getUserCreditBalance:", error);
     // Return 0 credits in case of any error

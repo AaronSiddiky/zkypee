@@ -20,7 +20,7 @@ export default function TransferCreditsPage() {
 
     try {
       // Insert the transfer request into Supabase
-      const { data, error } = await supabase.from("credit_transfers").insert({
+      const { data, error } = await (supabase as any).from("credit_transfers").insert({
         skype_username: skypeUsername,
         credit_amount: parseFloat(creditAmount),
         email: email,

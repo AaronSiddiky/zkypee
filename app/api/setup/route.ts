@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
           if (session?.session?.user) {
             const user = session.session.user;
             try {
-              const { error: insertError } = await supabase
+              const { error: insertError } = await (supabase as any)
                 .from("users")
                 .upsert({
                   id: user.id,

@@ -74,7 +74,7 @@ export async function addPhoneNumberToUser(
 
     if (
       !fetchError &&
-      userData?.purchased_phone_numbers?.includes(phoneNumber)
+      (userData as any)?.purchased_phone_numbers?.includes(phoneNumber)
     ) {
       console.log(
         `[addPhoneNumberToUser] Phone number already exists in user's account`
@@ -107,14 +107,14 @@ export async function addPhoneNumberToUser(
       }
 
       // Get current phone numbers or initialize empty array
-      const currentPhoneNumbers = userData?.purchased_phone_numbers || [];
+      const currentPhoneNumbers = (userData as any)?.purchased_phone_numbers || [];
 
       // Don't add duplicate numbers
       if (!currentPhoneNumbers.includes(phoneNumber)) {
         const updatedPhoneNumbers = [...currentPhoneNumbers, phoneNumber];
 
         // Update the user record
-        const { error: updateError } = await serverClient
+        const { error: updateError } = await (serverClient as any)
           .from("users")
           .update({
             purchased_phone_numbers: updatedPhoneNumbers,
@@ -150,7 +150,7 @@ export async function addPhoneNumberToUser(
         const admin = requireAdmin();
 
         // Get current phone numbers
-        const { data: userData, error: fetchError } = await admin
+        const { data: userData, error: fetchError } = await (admin as any)
           .from("users")
           .select("purchased_phone_numbers")
           .eq("id", userId)
@@ -165,14 +165,14 @@ export async function addPhoneNumberToUser(
         }
 
         // Get current phone numbers or initialize empty array
-        const currentPhoneNumbers = userData?.purchased_phone_numbers || [];
+        const currentPhoneNumbers = (userData as any)?.purchased_phone_numbers || [];
 
         // Don't add duplicate numbers
         if (!currentPhoneNumbers.includes(phoneNumber)) {
           const updatedPhoneNumbers = [...currentPhoneNumbers, phoneNumber];
 
           // Update the user record
-          const { error: updateError } = await admin
+          const { error: updateError } = await (admin as any)
             .from("users")
             .update({
               purchased_phone_numbers: updatedPhoneNumbers,
@@ -226,14 +226,14 @@ export async function addPhoneNumberToUser(
       }
 
       // Get current phone numbers or initialize empty array
-      const currentPhoneNumbers = userData?.purchased_phone_numbers || [];
+      const currentPhoneNumbers = (userData as any)?.purchased_phone_numbers || [];
 
       // Don't add duplicate numbers
       if (!currentPhoneNumbers.includes(phoneNumber)) {
         const updatedPhoneNumbers = [...currentPhoneNumbers, phoneNumber];
 
         // Update the user record
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
           .from("users")
           .update({
             purchased_phone_numbers: updatedPhoneNumbers,
@@ -275,10 +275,13 @@ export async function addPhoneNumberToUser(
           );
         }
 
-        const { data, error } = await client.rpc("add_phone_number_to_user", {
-          p_user_id: userId,
-          p_phone_number: phoneNumber,
-        });
+        const { data, error } = await (client as any).rpc(
+          "add_phone_number_to_user",
+          {
+            p_user_id: userId,
+            p_phone_number: phoneNumber,
+          } as any
+        );
 
         if (error) {
           console.error(`[addPhoneNumberToUser] RPC call failed:`, error);
@@ -299,7 +302,7 @@ export async function addPhoneNumberToUser(
     console.log(`[addPhoneNumberToUser] Recording in purchased_numbers table`);
     // Use the server client if available, otherwise fall back to regular client
     const client = serverClient || supabase;
-    const { error: purchaseError } = await client
+    const { error: purchaseError } = await (client as any)
       .from("purchased_numbers")
       .insert({
         user_id: userId,
@@ -309,7 +312,7 @@ export async function addPhoneNumberToUser(
         date_created: phoneNumberDetails?.dateCreated,
         capabilities: phoneNumberDetails?.capabilities,
         status: "active",
-      });
+      } as any);
 
     if (purchaseError) {
       console.warn(
@@ -352,8 +355,8 @@ export async function getUserPhoneNumbers(userId: string): Promise<string[]> {
       .eq("id", userId)
       .single();
 
-    if (!userError && userData?.purchased_phone_numbers) {
-      const phoneNumbers = userData.purchased_phone_numbers || [];
+    if (!userError && (userData as any)?.purchased_phone_numbers) {
+      const phoneNumbers = (userData as any).purchased_phone_numbers || [];
       console.log(
         `[getUserPhoneNumbers] Found ${phoneNumbers.length} phone numbers in users table for user ${userId}`
       );
@@ -361,7 +364,7 @@ export async function getUserPhoneNumbers(userId: string): Promise<string[]> {
     }
 
     // If that fails or returns empty, try the purchased_numbers table
-    if (userError || !userData?.purchased_phone_numbers) {
+    if (userError || !(userData as any)?.purchased_phone_numbers) {
       console.log(`[getUserPhoneNumbers] Checking purchased_numbers table`);
 
       const { data: purchasedData, error: purchasedError } = await supabase
@@ -371,7 +374,9 @@ export async function getUserPhoneNumbers(userId: string): Promise<string[]> {
         .eq("status", "active");
 
       if (!purchasedError && purchasedData && purchasedData.length > 0) {
-        const phoneNumbers = purchasedData.map((item) => item.phone_number);
+        const phoneNumbers = (purchasedData as any[]).map(
+          (item: any) => item.phone_number
+        );
         console.log(
           `[getUserPhoneNumbers] Found ${phoneNumbers.length} phone numbers in purchased_numbers table for user ${userId}`
         );
@@ -422,14 +427,14 @@ export async function removePhoneNumberFromUser(
     if (!fetchError && userData) {
       // Filter out the phone number to remove
       const currentPhoneNumbers: string[] =
-        userData.purchased_phone_numbers || [];
+        (userData as any).purchased_phone_numbers || [];
       const updatedPhoneNumbers = currentPhoneNumbers.filter(
         (num) => num !== phoneNumber
       );
 
       // Only update if the array has changed
       if (currentPhoneNumbers.length !== updatedPhoneNumbers.length) {
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
           .from("users")
           .update({
             purchased_phone_numbers: updatedPhoneNumbers,
@@ -463,9 +468,9 @@ export async function removePhoneNumberFromUser(
 
   // 2. Update the purchased_numbers table
   try {
-    const { error: purchasedError } = await supabase
+    const { error: purchasedError } = await (supabase as any)
       .from("purchased_numbers")
-      .update({ status: "inactive" })
+      .update({ status: "inactive" } as any)
       .eq("user_id", userId)
       .eq("phone_number", phoneNumber);
 
@@ -520,8 +525,8 @@ export async function getUserPhoneNumbersWithSubscriptions(
       return new Map();
     }
 
-    const phoneNumbers = userData.purchased_phone_numbers || [];
-    const subscriptionIds = userData.stripe_subscription_ids || [];
+    const phoneNumbers = (userData as any).purchased_phone_numbers || [];
+    const subscriptionIds = (userData as any).stripe_subscription_ids || [];
 
     console.log(`Phone numbers from DB:`, phoneNumbers);
     console.log(`Subscription IDs from DB:`, subscriptionIds);

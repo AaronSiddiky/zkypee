@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
         console.log("Current user data:", userData);
 
         // Filter out the values we want to remove
-        const currentPhoneNumbers = userData.purchased_phone_numbers || [];
-        const currentSubscriptionIds = userData.stripe_subscription_ids || [];
+        const currentPhoneNumbers = (userData as any)?.purchased_phone_numbers ?? [];
+        const currentSubscriptionIds = (userData as any)?.stripe_subscription_ids ?? [];
 
         const updatedPhoneNumbers = currentPhoneNumbers.filter(
           (number: string) => number !== phoneNumber
@@ -114,11 +114,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Use the admin client to update the database
-        const { error: updateError } = await supabaseAdmin
+        const { error: updateError } = await (supabaseAdmin as any)
           .from("users")
           .update({
-            purchased_phone_numbers: updatedPhoneNumbers,
-            stripe_subscription_ids: updatedSubscriptionIds,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            purchased_phone_numbers: updatedPhoneNumbers as any,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            stripe_subscription_ids: updatedSubscriptionIds as any,
           })
           .eq("id", userId);
 
