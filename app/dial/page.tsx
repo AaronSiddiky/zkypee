@@ -7,6 +7,7 @@ import Auth from "../../components/Auth";
 import { motion } from "framer-motion";
 import { TwilioProvider } from "../../contexts/TwilioContext";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 interface Message {
   id: string;
@@ -26,6 +27,8 @@ export default function DialPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading2, setLoading2] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [creditsLoading, setCreditsLoading] = useState(false);
 
   const generateNumber = async () => {
     try {
@@ -52,6 +55,29 @@ export default function DialPage() {
   useEffect(() => {
     if (!loading && !user) setShowAuth(true);
   }, [loading, user]);
+
+  // Fetch user credits when authenticated
+  useEffect(() => {
+    const fetchCredits = async () => {
+      if (!user) return;
+      try {
+        setCreditsLoading(true);
+        const { data, error } = await (supabase as any)
+          .from("users")
+          .select("credit_balance")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (error) throw error;
+        setCreditBalance((data as any)?.credit_balance ?? 0);
+      } catch (e) {
+        console.error("Failed to load credits", e);
+        setCreditBalance(0);
+      } finally {
+        setCreditsLoading(false);
+      }
+    };
+    fetchCredits();
+  }, [user]);
 
   useEffect(() => {
     if (!number || activeTab !== "sms") return;
@@ -126,16 +152,38 @@ export default function DialPage() {
                   className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl border border-white/10 inline-block mx-auto overflow-hidden md:ml-20"
                   style={{ width: "340px", height: "680px" }}
                 >
-                  <TwilioProvider>
-                    <div className="p-0 flex justify-center">
-                      <div className="transform scale-[0.83] origin-top pb-0 -mb-24 -mt-8">
-                        <div className="mb-0">
-                          <h2 className="text-2xl font-bold text-white">Phone Dialer</h2>
-                        </div>
-                        <PhoneDialer user={user} loading={loading} />
-                      </div>
+                  {/* Gate: must be logged in and have credits */}
+                  {!user ? (
+                    <div className="p-8 flex flex-col items-center justify-center text-center h-full">
+                      <h2 className="text-2xl font-bold text-white mb-2">Login required</h2>
+                      <p className="text-white/80 mb-4">Please sign in to use the dialer.</p>
+                      <button
+                        onClick={() => setShowAuth(true)}
+                        className="rounded-lg bg-white/20 hover:bg-white/30 text-white px-4 py-2"
+                      >
+                        Login
+                      </button>
                     </div>
-                  </TwilioProvider>
+                  ) : creditsLoading ? (
+                    <div className="p-8 flex items-center justify-center h-full text-white/80">Loading your credits…</div>
+                  ) : creditBalance !== null && creditBalance <= 0 ? (
+                    <div className="p-8 flex flex-col items-center justify-center text-center h-full">
+                      <h2 className="text-2xl font-bold text-white mb-2">Insufficient credits</h2>
+                      <p className="text-white/80 mb-4">Add credits to place calls.</p>
+                      <a href="/credits" className="rounded-lg bg-white text-[#00AFF0] px-4 py-2 font-semibold">Buy Credits</a>
+                    </div>
+                  ) : (
+                    <TwilioProvider>
+                      <div className="p-0 flex justify-center">
+                        <div className="transform scale-[0.83] origin-top pb-0 -mb-24 -mt-8">
+                          <div className="mb-0">
+                            <h2 className="text-2xl font-bold text-white">Phone Dialer</h2>
+                          </div>
+                          <PhoneDialer user={user} loading={loading} />
+                        </div>
+                      </div>
+                    </TwilioProvider>
+                  )}
                 </div>
               ) : (
                 <div

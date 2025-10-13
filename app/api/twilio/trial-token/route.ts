@@ -14,6 +14,43 @@ export async function GET(request: Request) {
   console.log("[TRIAL API] GET /api/twilio/trial-token - Request received");
 
   try {
+    const urlObj = new URL(request.url);
+    const recaptchaToken =
+      request.headers.get("x-recaptcha-token") ||
+      urlObj.searchParams.get("rc");
+    const ipForCaptcha = getIpAddress(request);
+    const secret = process.env.RECAPTCHA_SECRET_KEY;
+    const devBypass = process.env.RECAPTCHA_DEV_BYPASS === "true";
+    if (!secret && !devBypass) {
+      return NextResponse.json({ error: "server_misconfigured" }, { status: 500 });
+    }
+    if (!recaptchaToken && !devBypass) {
+      return NextResponse.json({ error: "recaptcha_required" }, { status: 400 });
+    }
+    if (!devBypass) {
+      const params = new URLSearchParams();
+      params.set("secret", secret as string);
+      params.set("response", recaptchaToken as string);
+      params.set("remoteip", ipForCaptcha);
+      const verifyRes = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: params,
+        cache: "no-store",
+      });
+      const verifyJson = await verifyRes.json();
+      if (!verifyJson?.success) {
+        return NextResponse.json({ error: "recaptcha_failed" }, { status: 403 });
+      }
+      if (verifyJson.hostname && verifyJson.hostname !== urlObj.hostname) {
+        return NextResponse.json({ error: "recaptcha_failed_host" }, { status: 403 });
+      }
+      const origin = (request.headers.get("origin") || "").toLowerCase();
+      const expectedOrigin = `${urlObj.protocol}//${urlObj.host}`.toLowerCase();
+      if (process.env.NODE_ENV !== "development" && origin && origin !== expectedOrigin) {
+        return NextResponse.json({ error: "origin_mismatch" }, { status: 403 });
+      }
+    }
     // Get request details for debugging
     const url = new URL(request.url);
     const headers = Object.fromEntries(request.headers.entries());
@@ -84,7 +121,7 @@ export async function GET(request: Request) {
     // Set token TTL (time-to-live) in seconds - shorter for trial tokens
     const tokenTTL = 300; // 5 minutes
 
-    if (!accountSid || !apiKey || !apiSecret || !outgoingApplicationSid) {
+    if (!accountSid || !apiKey || !apiSecret) {
       console.error("[TRIAL API] Missing required Twilio credentials");
       throw new Error("Missing required Twilio credentials");
     }
@@ -93,11 +130,12 @@ export async function GET(request: Request) {
     const AccessToken = twilio.jwt.AccessToken;
     const VoiceGrant = AccessToken.VoiceGrant;
 
-    // Create a Voice grant for this token
-    const voiceGrant = new VoiceGrant({
-      outgoingApplicationSid: outgoingApplicationSid,
-      incomingAllow: true,
-    });
+    // Create a Voice grant for this token; allow incoming; include outgoing if configured
+    const grantOptions: any = { incomingAllow: true };
+    if (outgoingApplicationSid) {
+      grantOptions.outgoingApplicationSid = outgoingApplicationSid;
+    }
+    const voiceGrant = new VoiceGrant(grantOptions);
 
     // Create an access token which we will sign and return to the client
     const token = new AccessToken(accountSid, apiKey, apiSecret, {

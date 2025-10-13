@@ -200,7 +200,7 @@ interface TwilioContextType {
   trialCallsRemaining: number;
   setTrialCallsRemaining: React.Dispatch<React.SetStateAction<number>>;
   trialTimeRemaining: number; // in seconds
-  initializeTrialMode: () => Promise<boolean>;
+  initializeTrialMode: (captchaToken?: string) => Promise<boolean>;
   showTrialConversionModal: boolean;
   setShowTrialConversionModal: (show: boolean) => void;
   // Add a new function to send DTMF tones during a call
@@ -263,11 +263,13 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
   // Duration tracking interval
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // API URL for local development or production
+  // API URL for local development or production (SSR-safe)
   const apiUrl =
-    typeof window !== "undefined" && window.location.hostname === "localhost"
-      ? `${window.location.protocol}//${window.location.hostname}:3000`
-      : window.location.origin;
+    typeof window !== "undefined"
+      ? window.location.hostname === "localhost"
+        ? `${window.location.protocol}//${window.location.hostname}:3000`
+        : window.location.origin
+      : "";
 
   // Call information
   const [debugInfo, setDebugInfo] = useState<{
@@ -873,19 +875,24 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Function to fetch a trial Twilio token
-  const fetchTrialToken = async (): Promise<{
+  const fetchTrialToken = async (captchaToken?: string): Promise<{
     token: string | null;
     fingerprint: string | null;
     ipAddress: string | null;
     trialAvailable: boolean;
     callsUsed: number;
+    errorCode?: string;
   }> => {
     try {
       console.log("[TRIAL FLOW] fetchTrialToken - Starting token fetch");
 
-      const response = await fetch(`${apiUrl}/api/twilio/trial-token`, {
+      const url = `/api/twilio/trial-token${captchaToken ? `?rc=${encodeURIComponent(captchaToken)}` : ""}`;
+      const response = await fetch(url, {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(captchaToken ? { "x-recaptcha-token": captchaToken } : {}),
+        },
       });
 
       if (!response.ok) {
@@ -894,12 +901,18 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
           response.status,
           response.statusText
         );
+        let errCode: string | undefined = undefined;
+        try {
+          const errJson = await response.json();
+          errCode = errJson?.error;
+        } catch {}
         return {
           token: null,
           fingerprint: null,
           ipAddress: null,
           trialAvailable: false,
           callsUsed: 0,
+          errorCode: errCode,
         };
       }
 
@@ -1122,7 +1135,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
 
         // Set up event handlers
         newDevice.on("registered", () => {
-          console.log("✅ Twilio device is ready");
+          console.log("Twilio device is ready");
           setStatus(CallStatus.READY);
           setIsReady(true);
           setIsConnecting(false);
@@ -1132,14 +1145,14 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
         });
 
         newDevice.on("error", (error: Error) => {
-          console.error("❌ Twilio device error:", error);
+          console.error("Twilio device error:", error);
           setError(error.message);
           setStatus(CallStatus.ERROR);
           setIsConnecting(false);
         });
 
         newDevice.on("connect", (call: Call) => {
-          console.log("📞 Call connected in device.on('connect') handler", {
+          console.log("Call connected in device.on('connect') handler", {
             callSid: call.parameters.CallSid,
             status: call.status(),
           });
@@ -1158,7 +1171,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
 
           // Handle disconnect
           call.on("disconnect", () => {
-            console.log("📞 Call disconnected in device.on('connect') handler");
+            console.log("Call disconnected in device.on('connect') handler");
             setActiveCall(null);
             setConnection(null);
             setIsConnected(false);
@@ -1178,7 +1191,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
         });
 
         newDevice.on("disconnect", () => {
-          console.log("📞 Device disconnected");
+          console.log("Device disconnected");
           setIsConnected(false);
           setActiveCall(null);
           setConnection(null);
@@ -1246,8 +1259,8 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
     try {
       resetError();
       
-      console.log("⭐ makeCall initiated to:", phoneNumber);
-      console.log("⭐ Current environment:", {
+      console.log(" makeCall initiated to:", phoneNumber);
+      console.log(" Current environment:", {
         baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
         host: typeof window !== "undefined" ? window.location.host : "unknown",
         origin: typeof window !== "undefined" ? window.location.origin : "unknown",
@@ -1256,7 +1269,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
       // IMPORTANT: Always use the default Twilio phone number as the caller ID
       // This is required for client-to-phone calls
       const defaultTwilioNumber = "+18574129969"; // Your verified Twilio number from .env
-      console.log(`⭐ Using verified Twilio number as caller ID: ${defaultTwilioNumber}`);
+      console.log(` Using verified Twilio number as caller ID: ${defaultTwilioNumber}`);
 
       // Get the selected outgoing number from localStorage if available
       const selectedOutgoingNumber =
@@ -1265,7 +1278,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
           : defaultTwilioNumber;
 
       if (selectedOutgoingNumber) {
-        console.log(`⭐ Using custom outgoing number: ${selectedOutgoingNumber}`);
+        console.log(` Using custom outgoing number: ${selectedOutgoingNumber}`);
       }
 
       if (isTrialMode) {
@@ -1371,7 +1384,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
         ) {
           validatedOutgoingNumber = numberStr;
           console.log(
-            `⭐ Using validated outgoing number: ${validatedOutgoingNumber}`
+            ` Using validated outgoing number: ${validatedOutgoingNumber}`
           );
         } else {
           console.warn(
@@ -1904,42 +1917,22 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Initialize trial mode
-  const initializeTrialMode = useCallback(async (): Promise<boolean> => {
-    console.log("[TRIAL FLOW] initializeTrialMode - Starting");
+  const initializeTrialMode = useCallback(
+    async (captchaToken?: string): Promise<boolean> => {
+      console.log("[TRIAL FLOW] initializeTrialMode - Starting");
+      try {
 
-    // If user is logged in, skip trial initialization - they already have a full account
-    if (user) {
-      console.log(
-        "[TRIAL FLOW] initializeTrialMode - User is logged in, skipping trial initialization"
-      );
-      return true;
-    }
+      // If user is logged in, skip trial initialization - they already have a full account
+      if (user) {
+        console.log(
+          "[TRIAL FLOW] initializeTrialMode - User is logged in; skipping trial"
+        );
+        return initializeDevice();
+      }
 
-    try {
-      // Check if we already have a trial token
-      const existingToken = localStorage.getItem("zkypee_trial_token");
-      const existingFingerprint = localStorage.getItem(
-        "zkypee_trial_fingerprint"
-      );
-      const existingIpAddress = localStorage.getItem("zkypee_trial_ip_address");
-
-      console.log("[TRIAL FLOW] initializeTrialMode - Existing data:", {
-        hasToken: !!existingToken,
-        hasFingerprint: !!existingFingerprint,
-        hasIpAddress: !!existingIpAddress,
-        fingerprint: existingFingerprint
-          ? existingFingerprint.substring(0, 8) + "..."
-          : null,
-      });
-
-      // Fetch a new trial token
-      console.log("[TRIAL FLOW] initializeTrialMode - Fetching trial token");
-      const tokenResponse = await fetchTrialToken();
-
-      console.log("[TRIAL FLOW] initializeTrialMode - Trial token response:", {
-        received: !!tokenResponse.token,
-        trialAvailable: tokenResponse.trialAvailable,
-        callsUsed: tokenResponse.callsUsed,
+      // Fetch trial token (requires reCAPTCHA token if backend is enforcing)
+      const tokenResponse = await fetchTrialToken(captchaToken);
+      console.log("[TRIAL FLOW] initializeTrialMode - Token response:", {
         fingerprint: tokenResponse.fingerprint
           ? tokenResponse.fingerprint.substring(0, 8) + "..."
           : null,
@@ -1950,27 +1943,33 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
         console.error(
           "[TRIAL FLOW] initializeTrialMode - Failed to get trial token"
         );
-        setError("Failed to initialize trial mode");
+        const code = tokenResponse.errorCode;
+        let msg = "Failed to initialize trial mode";
+        if (code === "recaptcha_required") msg = "Please complete verification and try again.";
+        else if (code === "recaptcha_failed" || code === "recaptcha_failed_host") msg = "Verification failed, please retry the CAPTCHA.";
+        else if (code === "origin_mismatch") msg = "Request origin not allowed.";
+        else if (code === "server_misconfigured") msg = "Verification unavailable. Please try again later.";
+        setError(msg);
         setStatus(CallStatus.ERROR);
         return false;
       }
 
-      // Set the trial token in state
+      // Set the trial token expiration window
       setTokenExpirationTime(new Date(Date.now() + 300000)); // 5 minutes
 
-      // Get the trial variant
-      // Use non-null assertion to tell TypeScript that fingerprint is not null
-      const trialVariant = getTrialVariant(tokenResponse.fingerprint!);
-      console.log(
-        "[TRIAL FLOW] initializeTrialMode - Trial variant:",
-        trialVariant
-      );
+      // Determine trial variant for analytics/feature gating
+      if (tokenResponse.fingerprint) {
+        const trialVariant = getTrialVariant(tokenResponse.fingerprint);
+        console.log(
+          "[TRIAL FLOW] initializeTrialMode - Trial variant:",
+          trialVariant
+        );
+      }
 
-      // Set trial mode to true
+      // Enable trial mode
       setIsTrialMode(true);
 
-      // After getting the token, fetch the current trial usage from the database
-      // to get the accurate callsRemaining value
+      // Populate callsRemaining using server-side DB
       if (tokenResponse.fingerprint && tokenResponse.ipAddress) {
         try {
           const { getTrialUsage } = await import("@/lib/trial-limitations");
@@ -1987,14 +1986,12 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
             usage
           );
 
-          // Set the trial calls remaining based on the database response
           setTrialCallsRemaining(usage.callsRemaining);
           console.log(
             "[TRIAL FLOW] initializeTrialMode - Set trial calls remaining to:",
             usage.callsRemaining
           );
 
-          // If no calls remaining, show the conversion modal ONLY if user is not logged in
           if (usage.callsRemaining <= 0 && !user) {
             console.log(
               "[TRIAL FLOW] initializeTrialMode - No calls remaining, showing conversion modal"
@@ -2013,27 +2010,15 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
         );
       }
 
-      // Use the same device initialization pattern as regular calls
+      // Initialize Twilio Device with the trial token
       return await suppressTwilioTokenLogs(async () => {
-        // Check if token exists before creating a device
-        if (!tokenResponse.token) {
-          console.error(
-            "[TRIAL FLOW] initializeTrialMode - No token available, cannot create device"
-          );
-          setError("Failed to obtain Twilio token for trial");
-          setStatus(CallStatus.ERROR);
-          return false;
-        }
-
-        // Create new device
-        const newDevice = new Device(tokenResponse.token, {
+        const newDevice = new Device(tokenResponse.token!, {
           logLevel: "debug",
           allowIncomingWhileBusy: true,
           closeProtection: true,
           codecPreferences: ["pcmu", "opus"] as any,
         });
 
-        // Set up event handlers
         newDevice.on("registered", () => {
           console.log(
             "[TRIAL FLOW] initializeTrialMode - Twilio trial device is ready"
@@ -2041,7 +2026,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
           setStatus(CallStatus.READY);
           setIsReady(true);
           setIsConnecting(false);
-          setTrialTimeRemaining(60); // Reset to 60 seconds
+          setTrialTimeRemaining(60);
         });
 
         newDevice.on("error", (error: Error) => {
@@ -2054,7 +2039,6 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
           setIsConnecting(false);
         });
 
-        // Register the device
         await newDevice.register();
         setDevice(newDevice);
         console.log(
@@ -2065,9 +2049,7 @@ export function TwilioProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error("[TRIAL FLOW] initializeTrialMode - Error:", error);
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to initialize trial mode"
+        error instanceof Error ? error.message : "Failed to initialize trial mode"
       );
       setStatus(CallStatus.ERROR);
       return false;

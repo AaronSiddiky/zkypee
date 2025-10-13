@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Auth from "@/components/Auth";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 export default function Header() {
   const pathname = usePathname();
@@ -29,6 +30,8 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement | null>(null);
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [loadingCredits, setLoadingCredits] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 6);
@@ -47,6 +50,30 @@ export default function Header() {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, [userMenuOpen]);
+
+  useEffect(() => {
+    const loadCredits = async () => {
+      if (!user) {
+        setCreditBalance(null);
+        return;
+      }
+      try {
+        setLoadingCredits(true);
+        const { data, error } = await (supabase as any)
+          .from("users")
+          .select("credit_balance")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (error) throw error;
+        setCreditBalance((data as any)?.credit_balance ?? 0);
+      } catch (e) {
+        setCreditBalance(0);
+      } finally {
+        setLoadingCredits(false);
+      }
+    };
+    loadCredits();
+  }, [user]);
 
   const handleLogout = async () => {
     await signOut();
@@ -200,13 +227,23 @@ export default function Header() {
               </div>
 
               {/* CTA */}
-              <Link
-                href="/dial"
-                className="hidden sm:inline-flex items-center gap-2 rounded-full bg-black px-4 py-2 text-sm font-medium text-white hover:bg-neutral-900"
-              >
-                <Phone className="h-4 w-4" />
-                Try for Free
-              </Link>
+              {!user ? (
+                <Link
+                  href="/try-for-free"
+                  className="hidden sm:inline-flex items-center gap-2 rounded-full bg-black px-4 py-2 text-sm font-medium text-white hover:bg-neutral-900"
+                >
+                  <Phone className="h-4 w-4" />
+                  Try for Free
+                </Link>
+              ) : (
+                <Link
+                  href="/credits"
+                  className="hidden sm:inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-3 py-1.5 text-sm text-neutral-900 hover:bg-neutral-50"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  {loadingCredits ? "Checking…" : `${(creditBalance ?? 0).toFixed(2)} credits`}
+                </Link>
+              )}
 
               {/* Mobile burger */}
               <button
@@ -356,7 +393,7 @@ export default function Header() {
                       Login
                     </button>
                     <Link
-                      href="/dial"
+                      href="/try-for-free"
                       onClick={() => setMobileOpen(false)}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-black px-4 py-2.5 text-sm font-medium text-white hover:bg-neutral-900"
                     >
