@@ -56,7 +56,8 @@ export async function createCheckoutSession(
   packageId: string,
   userId: string,
   successUrl: string,
-  cancelUrl: string
+  cancelUrl: string,
+  customerEmail?: string
 ) {
   const stripe = getStripe();
 
@@ -74,6 +75,8 @@ export async function createCheckoutSession(
     console.log(
       `Creating checkout session for package ${packageId} for user ${userId}`
     );
+    const minuteBucket = Math.floor(Date.now() / 60000);
+    const idempotencyKey = `chk_${userId}_${packageId}_${minuteBucket}`;
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -92,12 +95,15 @@ export async function createCheckoutSession(
       mode: "payment",
       success_url: successUrl,
       cancel_url: cancelUrl,
+      allow_promotion_codes: true,
+      client_reference_id: userId,
+      customer_email: customerEmail,
       metadata: {
         userId,
         packageId,
         creditsToAdd: creditPackage.credits.toString(),
       },
-    });
+    }, { idempotencyKey });
 
     console.log(`Checkout session created with ID: ${session.id}`);
     console.log(`Session metadata:`, session.metadata);

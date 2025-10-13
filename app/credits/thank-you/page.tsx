@@ -129,7 +129,7 @@ export default function ThankYouPage() {
           Buy More Credits
         </Link>
         <Link
-          href="/dial"
+          href="/calling"
           className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded transition-colors"
         >
           Make a Call

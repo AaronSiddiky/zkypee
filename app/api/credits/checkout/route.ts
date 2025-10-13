@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
 
       // Continue with the authenticated user
       const userId = user.id;
+      const customerEmail = user.email || undefined;
       const body = await request.json();
       const { packageId } = body;
 
@@ -47,10 +48,12 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Create success and cancel URLs
-      const origin = request.headers.get("origin") || "http://zkypee.com";
-      const successUrl = `${origin}/credits/success?session_id={CHECKOUT_SESSION_ID}`;
-      const cancelUrl = `${origin}/credits/cancel`;
+      // Create success and cancel URLs using allowed origins only
+      const reqOrigin = request.nextUrl.origin;
+      const envOrigin = process.env.NEXT_PUBLIC_BASE_URL || reqOrigin;
+      const allowedOrigin = process.env.NODE_ENV === "development" ? reqOrigin : envOrigin;
+      const successUrl = `${allowedOrigin.replace(/\/$/, "")}/credits/success?session_id={CHECKOUT_SESSION_ID}`;
+      const cancelUrl = `${allowedOrigin.replace(/\/$/, "")}/credits/cancel`;
 
       try {
         // Create Stripe checkout session
@@ -58,7 +61,8 @@ export async function POST(request: NextRequest) {
           packageId,
           userId,
           successUrl,
-          cancelUrl
+          cancelUrl,
+          customerEmail
         );
 
         // Verify that metadata is correctly set
@@ -93,6 +97,7 @@ export async function POST(request: NextRequest) {
 
     // If we have a session, proceed with that
     const userId = authSession.user.id;
+    const customerEmail = authSession.user.email || undefined;
     const body = await request.json();
     const { packageId } = body;
 
@@ -105,10 +110,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create success and cancel URLs
-    const origin = request.headers.get("origin") || "http://localhost:3000";
-    const successUrl = `${origin}/credits/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${origin}/credits/cancel`;
+    // Create success and cancel URLs using allowed origins only
+    const reqOrigin = request.nextUrl.origin;
+    const envOrigin = process.env.NEXT_PUBLIC_BASE_URL || reqOrigin;
+    const allowedOrigin = process.env.NODE_ENV === "development" ? reqOrigin : envOrigin;
+    const successUrl = `${allowedOrigin.replace(/\/$/, "")}/credits/success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${allowedOrigin.replace(/\/$/, "")}/credits/cancel`;
 
     try {
       // Create Stripe checkout session
@@ -116,7 +123,8 @@ export async function POST(request: NextRequest) {
         packageId,
         userId,
         successUrl,
-        cancelUrl
+        cancelUrl,
+        customerEmail
       );
 
       // Verify that metadata is correctly set

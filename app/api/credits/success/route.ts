@@ -113,9 +113,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (existingTransaction) {
-      console.log("Transaction already processed, sending success response");
-      // Instead of redirecting, just return a success response
-      return createSuccessResponse();
+      console.log("Transaction already processed, redirecting to thank-you");
+      const redirectUrl = new URL(`/credits/thank-you?creditsAdded=${true}`, request.nextUrl.origin);
+      return NextResponse.redirect(redirectUrl, { status: 302 });
     }
 
     // Add credits to the user's account
@@ -132,8 +132,9 @@ export async function GET(request: NextRequest) {
         console.warn(
           "Payment processed but credits may not have been added to the user's account"
         );
-        // We'll still return a success response, but with a flag indicating the credits might not have been added
-        return createSuccessResponse(false);
+        // Redirect with flag indicating the credits might not have been added
+        const redirectUrl = new URL(`/credits/thank-you?creditsAdded=${false}`, request.nextUrl.origin);
+        return NextResponse.redirect(redirectUrl, { status: 302 });
       }
     } catch (creditError) {
       console.error("Error adding credits to user:", creditError);
@@ -170,37 +171,20 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Return a success response with a flag indicating the credits weren't added
-      return createSuccessResponse(false);
+      // Redirect with flag indicating the credits weren't added
+      const redirectUrl = new URL(`/credits/thank-you?creditsAdded=${false}`, request.nextUrl.origin);
+      return NextResponse.redirect(redirectUrl, { status: 302 });
     }
 
-    // Return a success response instead of redirecting
-    console.log("Payment processed successfully, sending success response");
-    return createSuccessResponse(true);
+    // Redirect browser to thank-you page; credits are already handled (webhook) or just added above
+    const redirectUrl = new URL(`/credits/thank-you?creditsAdded=${true}`, request.nextUrl.origin);
+    return NextResponse.redirect(redirectUrl, { status: 302 });
   } catch (error) {
     console.error("Unexpected error in success route:", error);
 
-    // Return a success response even if there was an error
-    return createSuccessResponse();
+    // Redirect anyway; thank-you page will reflect current balance
+    const redirectUrl = new URL(`/credits/thank-you?creditsAdded=${false}`, request.nextUrl.origin);
+    return NextResponse.redirect(redirectUrl, { status: 302 });
   }
 }
 
-// Helper function to create a consistent success response
-function createSuccessResponse(creditsAdded = true) {
-  // Create a response with the appropriate CORS headers
-  const response = NextResponse.json(
-    {
-      success: true,
-      creditsAdded: creditsAdded,
-      redirectTo: `/credits/thank-you?creditsAdded=${creditsAdded}`,
-    },
-    { status: 200 }
-  );
-
-  // Add CORS headers
-  response.headers.set("Access-Control-Allow-Origin", "*");
-  response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  response.headers.set("Access-Control-Allow-Headers", "Content-Type");
-
-  return response;
-}
