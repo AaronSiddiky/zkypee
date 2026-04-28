@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React from "react";
 import PhoneDialer from "../../components/PhoneDialer";
 import { AuthProvider, useAuth } from "../../contexts/AuthContext";
