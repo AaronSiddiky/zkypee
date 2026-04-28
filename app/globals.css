@@ -1,26 +1,213 @@
 @import "tailwindcss";
 
-@layer base {
-  html:focus-within { scroll-behavior: smooth; }
-  ::selection { background: rgba(0,0,0,0.08); }
+/* ─── Zkypee Design System ─────────────────────────────────────── */
+:root {
+  --ink: #0A0A0B;
+  --ink-2: #1c1c1f;
+  --muted: #6b6b70;
+  --muted-2: #9a9a9f;
+  --line: #e6e3dc;
+  --line-2: #d8d4cb;
+  --paper: #F6F4EE;
+  --paper-2: #EFEBE2;
+  --card: #ffffff;
+  --accent: oklch(0.45 0.14 245);
+  --accent-soft: oklch(0.94 0.03 245);
+  --good: oklch(0.62 0.15 150);
+  --warn: oklch(0.72 0.16 70);
 }
 
-@layer components {
-  /* Shadows tuned for light UI */
-  .shadow-soft {
-    @apply shadow-[0_10px_30px_-15px_rgba(0,0,0,0.2)];
-  }
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
 
+html:focus-within { scroll-behavior: smooth; }
+::selection { background: var(--ink); color: var(--paper); }
+h1, h2, h3, p { text-wrap: pretty; }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+
+/* ─── Type scale ─────────────────────────────────────────────── */
+.eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.display {
+  font-size: clamp(48px, 7.2vw, 104px);
+  line-height: 0.96;
+  letter-spacing: -0.035em;
+  font-weight: 500;
+}
+
+.h1 {
+  font-size: clamp(36px, 4.6vw, 64px);
+  line-height: 1.02;
+  letter-spacing: -0.028em;
+  font-weight: 500;
+}
+
+.h2 {
+  font-size: clamp(24px, 2.4vw, 32px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 500;
+}
+
+.lead {
+  font-size: clamp(17px, 1.4vw, 20px);
+  line-height: 1.45;
+  color: var(--ink-2);
+  letter-spacing: -0.01em;
+}
+
+/* ─── Layout ─────────────────────────────────────────────────── */
+.zk-container {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+@media (max-width: 700px) {
+  .zk-container { padding: 0 20px; }
+}
+
+.hairline { border: 0; border-top: 1px solid var(--line); margin: 0; }
+
+/* ─── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  transition: all .18s ease;
+}
+.btn-primary { background: var(--ink); color: var(--paper); }
+.btn-primary:hover { background: #2a2a2e; }
+.btn-ghost { border-color: var(--line-2); background: transparent; color: var(--ink); }
+.btn-ghost:hover { background: rgba(0,0,0,0.04); }
+.btn-sm { padding: 7px 12px; font-size: 13px; }
+
+/* ─── Cards / Surfaces ────────────────────────────────────────── */
+.zk-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+.zk-surface { background: var(--paper-2); border: 1px solid var(--line); border-radius: 14px; }
+
+/* ─── Nav ─────────────────────────────────────────────────────── */
+.zk-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  background: color-mix(in oklab, var(--paper) 80%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+.zk-nav-link {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  padding: 6px 0;
+  transition: color .15s ease;
+}
+.zk-nav-link:hover { color: var(--ink); }
+
+/* ─── Pill / Tag ──────────────────────────────────────────────── */
+.zk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  font-size: 11.5px;
+  color: var(--ink-2);
+  background: var(--card);
+}
+.zk-tag {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ─── Section spacing ─────────────────────────────────────────── */
+.zk-section { padding: 96px 0; }
+@media (max-width: 700px) { .zk-section { padding: 64px 0; } }
+
+/* ─── Animations ──────────────────────────────────────────────── */
+@keyframes pulse {
+  0% { transform: scale(0.6); opacity: .6 }
+  100% { transform: scale(1.6); opacity: 0 }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0) }
+  to { transform: translateX(-50%) }
+}
+
+/* ─── Responsive grids ────────────────────────────────────────── */
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0, 520px);
+  gap: 60px;
+  align-items: center;
+}
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr; }
+}
+
+.sec-grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 64px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .sec-grid { grid-template-columns: 1fr; gap: 32px; }
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 64px;
+  align-items: center;
+}
+@media (max-width: 860px) {
+  .about-grid { grid-template-columns: 1fr; }
+  .about-grid > div:last-child { max-width: 360px; }
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+@media (max-width: 700px) {
+  .action-grid { grid-template-columns: 1fr; }
+}
+
+.foot-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 48px;
+}
+@media (max-width: 700px) {
+  .foot-grid { grid-template-columns: 1fr; gap: 32px; }
+}
+
+/* ─── Legacy (keep for inner app pages) ──────────────────────── */
 input[type="password"]::-ms-reveal,
-input[type="password"]::-ms-clear {
-  display: none;
-  width: 0;
-  height: 0;
-}
+input[type="password"]::-ms-clear { display: none; width: 0; height: 0; }
 input[type="password"]::-webkit-credentials-auto-fill-button {
-  visibility: hidden;
-  pointer-events: none;
-  position: absolute;
-  right: 0;
+  visibility: hidden; pointer-events: none; position: absolute; right: 0;
 }

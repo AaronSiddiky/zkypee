@@ -1,22 +1,39 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import dynamic from "next/dynamic";
 import { Suspense } from "react";
-import { Inter } from "next/font/google";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { Inter_Tight, JetBrains_Mono, Instrument_Serif } from "next/font/google";
 import Providers from '@/components/providers/Providers';
 
-const inter = Inter({ subsets: ["latin"], display: "swap", variable: "--font-inter" });
+const interTight = Inter_Tight({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter-tight",
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-mono",
+  weight: ["400", "500"],
+});
+
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-serif",
+  weight: ["400"],
+  style: ["normal", "italic"],
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://zkypee.com"),
-  title: { default: "Zkypee", template: "%s | Zkypee" },
+  title: { default: "Zkypee — Thank you for calling with us", template: "%s | Zkypee" },
   description:
-    "Modern calling and messaging without the bloat. Crystal‑clear calls, transcripts, and a clean experience across all devices.",
+    "Zkypee has been deprecated. Thank you to everyone who trusted us as their provider.",
   applicationName: "Zkypee",
-  keywords: ["Skype alternative", "VoIP", "calling", "video calls", "messaging", "international calling"],
+  keywords: ["Zkypee", "VoIP", "calling", "Columbia University"],
   authors: [{ name: "Zkypee" }],
   creator: "Zkypee",
   publisher: "Zkypee",
@@ -26,16 +43,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: "https://zkypee.com",
-    title: "Zkypee",
-    description:
-      "Modern calling and messaging without the bloat. Crystal‑clear calls, transcripts, and a clean experience across all devices.",
+    title: "Zkypee — Thank you for calling with us",
+    description: "Zkypee has been deprecated. Thank you to everyone who trusted us as their provider.",
     siteName: "Zkypee",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Zkypee",
-    description:
-      "Modern calling and messaging without the bloat. Crystal‑clear calls, transcripts, and a clean experience across all devices.",
+    title: "Zkypee — Thank you for calling with us",
+    description: "Zkypee has been deprecated. Thank you to everyone who trusted us as their provider.",
   },
   icons: {
     icon: [
@@ -89,7 +104,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={`${inter.variable} antialiased bg-white text-neutral-900`}>
+      <body
+        className={`${interTight.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} antialiased`}
+        style={{
+          fontFamily: "var(--font-inter-tight), system-ui, -apple-system, sans-serif",
+          fontFeatureSettings: '"ss01", "cv11"',
+          background: "var(--paper)",
+          color: "var(--ink)",
+        }}
+      >
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-black focus:px-3 focus:py-2 focus:text-white"
@@ -99,9 +122,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <Providers>
           <Suspense fallback={null}>
-            <Header />
             <main id="main">{children}</main>
-            <Footer />
           </Suspense>
         </Providers>
       </body>
